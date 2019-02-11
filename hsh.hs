@@ -17,7 +17,13 @@ import Control.Applicative
 prompt :: IO String
 prompt = liftM (++ " $ ") getCurrentDirectory 
 
-main = forever ( (prompt >>= putStr) *> hFlush stdout *> (getLine >>= runLine)) <|> return ()
+main = forever ( (prompt >>= putStr) *> hFlush stdout *> (getLine >>= runLine)) 
+
+--main = do
+--  (pid1,out,_) <- exec "/usr/bin/ls"   [   ] True  False Nothing
+--  (pid2,_,_)   <- exec "/usr/bin/grep" ["c"] False False ( out )
+--  void . wait $ pid1
+--  void . wait $ pid2
 
 runLine :: String -> IO ()
 runLine [] = return ()
@@ -26,7 +32,7 @@ runLine l = do
   f <- withPath (head . words $ l) 
   let as = tail . words $ l :: [String]
   if null f then putStrLn "not found" else do
-    (pid,_,_) <- exec (fromJust f) as False False
+    (pid,_,_) <- exec (fromJust f) as False False Nothing
     void . wait $ pid
 
 withPath :: String -> IO (Maybe String)

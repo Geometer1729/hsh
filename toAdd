@@ -1,7 +1,4 @@
+configureable prompt
 
-configure prompt
-
-builtins
+built-ins
   cd
-
-pipes
