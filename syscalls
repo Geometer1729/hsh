@@ -1,0 +1,17 @@
+--fork
+--exec
+--wait
+--waitpid
+--exit
+
+fileStuff
+  open
+  close
+  dup
+  dup2
+  pipe
+
+fileDescripter
+1 in
+2 out
+3 error
