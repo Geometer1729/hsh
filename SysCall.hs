@@ -18,29 +18,27 @@ import System.Posix.Types
 import System.Posix.IO
 
 --foreign import capi "c/exec.c exec" cexec :: CString -> Ptr CString -> Ptr CString -> IO Int
-foreign import capi "c/dup.c cexec" cexec :: CString -> Ptr CString -> Ptr CString -> IO (Ptr Word32)
+foreign import capi "c/exec.c cexec" cexec :: CString -> Ptr CString -> Ptr CString -> Bool -> Bool -> IO (Ptr Word32)
 foreign import capi "c/wait.c h_wait" cwait :: Int -> IO Int
 foreign import capi "stdlib.h free" freec :: Ptr a -> IO ()
 
-
 cifyListStr :: [String] -> IO (Ptr CString)
-cifyListStr ss = (sequence . map newCString . maybeNullByte $ ss) >>= newArray 
-
-maybeNullByte :: [String] -> [String]
-maybeNullByte xs = if length xs > 2 then xs ++ ["\0"] else xs
+cifyListStr ss = (sequence . map newCString $ ss) >>= newArray0 nullPtr
 
 wait :: Int -> IO ()
 wait = void . cwait
 
-exec :: String -> [String] -> IO (Int,Handle)
-exec filePath args = do
-    ptr <- join $ liftM3 cexec (newCString filePath) (cifyListStr $ "":args) (getEnvironment >>= cifyListStr . formatEnv)
-    [pid,fd] <- (peekArray 2 ptr)
+exec :: String -> [String] -> Bool -> Bool -> IO (Int,Maybe Handle,Maybe Handle)
+exec filePath args out err= do
+    ptr <- join $ liftM5 cexec (newCString filePath) (cifyListStr $ "":args) (getEnvironment >>= cifyListStr . formatEnv) (return out) (return err)
+    array <- (peekArray (1 + length (filter id [out,err])) ptr)
     void $ freec ptr
-    h <- fdToHandle (fromIntegral fd)
-    return (fromIntegral pid,h)
+    let pid = fromIntegral . head $ array :: Int
+    outH <- if out then fmap Just $ fdToHandle (fromIntegral $ array !! 1)                      else return Nothing
+    errH <- if err then fmap Just $ fdToHandle (fromIntegral $ array !! (if out then 2 else 1)) else return Nothing
+    return $ (pid,outH,errH)
 
 
 formatEnv :: [(String,String)] -> [String]
-formatEnv xs = [ a ++ "=" ++ b | (a,b) <- xs]
+formatEnv xs = [ a ++ "=" ++ b | (a,b) <- xs] 
 

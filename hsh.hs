@@ -26,10 +26,8 @@ runLine l = do
   f <- withPath (head . words $ l) 
   let as = tail . words $ l :: [String]
   if null f then putStrLn "not found" else do
-    (pid,h) <- exec (fromJust f) as 
-    str <- hGetContents h
+    (pid,_,_) <- exec (fromJust f) as False False
     void . wait $ pid
-    putStrLn str
 
 withPath :: String -> IO (Maybe String)
 withPath s = liftM2 (on (++) (':':))  getCurrentDirectory (fmap concat $ lookupEnv "PATH") >>= filterM doesFileExist . map (++ "/" ++ s) . (splitOn ":") >>= return . listToMaybe
