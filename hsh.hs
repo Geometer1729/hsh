@@ -1,18 +1,15 @@
-import SysCall
-
-import System.Environment
-import System.Directory
-import System.Exit
-import System.IO
-
+import Control.Applicative
+import Control.Monad
 import Data.Function
-import Data.Maybe
 import Data.List
 import Data.List.Split
+import Data.Maybe
 import Data.Word
-
-import Control.Monad
-import Control.Applicative
+import SysCall
+import System.Directory
+import System.Environment
+import System.Exit
+import System.IO
 
 prompt :: IO String
 prompt = liftM (++ " $ ") getCurrentDirectory 

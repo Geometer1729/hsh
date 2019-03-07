@@ -43,7 +43,5 @@ exec filePath args out err inpipe = do
     errH <- if err then fmap Just $ fdToHandle (fromIntegral $ array !! (if out then 2 else 1)) else return Nothing
     return $ (pid,outH,errH)
 
-
 formatEnv :: [(String,String)] -> [String]
 formatEnv xs = [ a ++ "=" ++ b | (a,b) <- xs] 
-

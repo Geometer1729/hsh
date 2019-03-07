@@ -2,3 +2,29 @@ configureable prompt
 
 built-ins
   cd
+
+
+type args = [String]
+run :: String -> [String] -> cmd
+type in = Maybe Pipe
+type out = Maybe Pipe , Maybe Pipe
+type cmd = in -> Out
+
+join = out -> in
+
+pipeO :: cmd -> cmd -> out -- merge stderrs
+pipeO c1 c2 = do
+  (c1o,c1e) <- c1 Nothing
+  (c2o,c2e) <- c2 c1e
+  return (join (c2o,c1o),c1e)
+pipeE :: cmd -> cmd -> out -- merge stdouts
+pipeE c1 c2 = do
+  (c1o,c1e) <- c1 Nothing
+  (c2o,c2e) <- c2 c1o
+  return (c20, join (c1e,c2e))
+pipeOE :: cmd -> cmd -> out -- merge std with stderr
+pipeOE c1 c2 = c2 (join (c1 Nothing)) 
+
+seq :: [cmd] -> cmd
+
+
