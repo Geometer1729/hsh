@@ -2,7 +2,10 @@
 import System.Process
 import System.Environment
 import System.Directory
+import System.Posix.Directory
 import Control.Monad
+import Data.Maybe
+import CD (cd)
 
 main = do
   continue <- (getLine >>= handleLine)
@@ -27,36 +30,13 @@ printEnvVar var = do
     Just value -> putStrLn (var ++ " " ++ value)
     Nothing -> putStrLn ("variable " ++ var ++ " is not set")
 
-cd :: [String] -> IO ()
-cd [] = lookupEnv "HOME" >>= \case 
-  Nothing -> putStrLn "error HOME not set"
-  Just path -> cd (path:[])
-cd (dir:[]) = do
-  pwd <- lookupEnv "PWD"
-  if head dir == '/' then 
-    tryCd dir
-    else case pwd of 
-      Just wd -> tryCd (wd ++ dir)
-      Nothing -> putStrLn "PWD not set and relative path given"
-cd (a:b:_) = putStrLn "too many args to cd"
-
-tryCd :: String -> IO ()
-tryCd path = do
-  valid <- doesDirectoryExist path
-  if valid then setEnv "PWD" path
-  else do
-    isFile <- doesFileExist path
-    if isFile then
-        putStrLn (path ++ " is a file not a directory")
-    else
-        putStrLn ("no such file or directory")
-
-
-
-
 runCmd :: String -> [String] -> IO ()
-runCmd cmd args = do
+runCmd path args = do
   env <- getEnvironment
-  procHandle <- runProcess cmd args Nothing (Just env) Nothing Nothing Nothing
-  exitCode <- waitForProcess procHandle
-  return ()
+  executable <- findExecutable path
+  if isJust executable then do
+    procHandle <- runProcess path args Nothing (Just env) Nothing Nothing Nothing
+    exitCode <- waitForProcess procHandle
+    return ()
+  else
+    putStrLn (path ++ " not found")
