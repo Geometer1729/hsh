@@ -1,36 +1,62 @@
-import Control.Applicative
-import Control.Monad
-import Data.Function
-import Data.List
-import Data.List.Split
-import Data.Maybe
-import Data.Word
-import SysCall
-import System.Directory
+{-# LANGUAGE LambdaCase #-}
+import System.Process
 import System.Environment
-import System.Exit
-import System.IO
+import System.Directory
+import Control.Monad
 
-prompt :: IO String
-prompt = liftM (++ " $ ") getCurrentDirectory 
+main = do
+  continue <- (getLine >>= handleLine)
+  if continue then main else return ()
+  
 
-main = forever ( (prompt >>= putStr) *> hFlush stdout *> (getLine >>= runLine)) 
+handleLine :: String -> IO Bool
+handleLine input = case words input of
+  [] -> return True
+  ("exit":_) -> return False
+  ("cd":args) -> cd args >> return True
+  ("print":args) -> printEnvVars args >> return True
+  (cmd:args) -> runCmd cmd args >> return True
 
---main = do
---  (pid1,out,_) <- exec "/usr/bin/ls"   [   ] True  False Nothing
---  (pid2,_,_)   <- exec "/usr/bin/grep" ["c"] False False ( out )
---  void . wait $ pid1
---  void . wait $ pid2
+printEnvVars :: [String] -> IO [()]
+printEnvVars = mapM printEnvVar 
 
-runLine :: String -> IO ()
-runLine [] = return ()
-runLine "exit" = putStrLn "exit" *> exitSuccess
-runLine l = do
-  f <- withPath (head . words $ l) 
-  let as = tail . words $ l :: [String]
-  if null f then putStrLn "not found" else do
-    (pid,_,_) <- exec (fromJust f) as False False Nothing
-    void . wait $ pid
+printEnvVar :: String -> IO ()
+printEnvVar var = do
+  result <- lookupEnv var
+  case result of
+    Just value -> putStrLn (var ++ " " ++ value)
+    Nothing -> putStrLn ("variable " ++ var ++ " is not set")
 
-withPath :: String -> IO (Maybe String)
-withPath s = liftM2 (on (++) (':':))  getCurrentDirectory (fmap concat $ lookupEnv "PATH") >>= filterM doesFileExist . map (++ "/" ++ s) . (splitOn ":") >>= return . listToMaybe
+cd :: [String] -> IO ()
+cd [] = lookupEnv "HOME" >>= \case 
+  Nothing -> putStrLn "error HOME not set"
+  Just path -> cd (path:[])
+cd (dir:[]) = do
+  pwd <- lookupEnv "PWD"
+  if head dir == '/' then 
+    tryCd dir
+    else case pwd of 
+      Just wd -> tryCd (wd ++ dir)
+      Nothing -> putStrLn "PWD not set and relative path given"
+cd (a:b:_) = putStrLn "too many args to cd"
+
+tryCd :: String -> IO ()
+tryCd path = do
+  valid <- doesDirectoryExist path
+  if valid then setEnv "PWD" path
+  else do
+    isFile <- doesFileExist path
+    if isFile then
+        putStrLn (path ++ " is a file not a directory")
+    else
+        putStrLn ("no such file or directory")
+
+
+
+
+runCmd :: String -> [String] -> IO ()
+runCmd cmd args = do
+  env <- getEnvironment
+  procHandle <- runProcess cmd args Nothing (Just env) Nothing Nothing Nothing
+  exitCode <- waitForProcess procHandle
+  return ()
