@@ -12,6 +12,7 @@ parseCommand s = let parser = readP_to_S cmdParser
                 in if length finished == 1
                     then Just . fst . head $ finished
                     else Nothing
+
 cmdParser :: ReadP Command
 cmdParser = parseExtract <++ parseSubExtract
 
@@ -28,7 +29,9 @@ parseExec = do
   return $ Exec exec args
 
 parseWord :: ReadP String
-parseWord = munch (/= ' ')
+parseWord = do
+  result <- munch (/= ' ')
+  if result `elem` ["<-",">>=","&&","||","&"] then pfail else return result
 
 parseArgs :: ReadP [String]
 parseArgs = many (char ' ' >> parseWord)
