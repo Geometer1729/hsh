@@ -1,6 +1,6 @@
 module CmdHandle where
 
-import CD (cd)
+import BuiltIns
 import Control.Monad
 import Data.Maybe
 import Parse
@@ -41,9 +41,9 @@ execOrBuiltin cmd rawArgs context = do
   args' <- mapM deTildify rawArgs
   case (cmd,args') of
     ("exit",_)     -> return (False,True)
---    ("cd",args)    -> withoutExit cd args context
---    ("print",args) -> withoutExit printEnvVars args context
---    ("let",args)   -> withoutExit letFunc args context
+    ("cd",args)    -> withoutExit $ cd args 
+    ("print",args) -> withoutExit $ printEnvVars args 
+    ("let",args)   -> withoutExit $ letFunc args 
     (cmd,args)     -> withoutExit $ runExec cmd args context
 
 withoutExit :: IO Bool -> IO (Bool,Bool)
@@ -76,22 +76,4 @@ sub _ _ [] = []
 sub match replace input = if isPrefix then replace ++ (sub match replace (drop (length match) input)) else (head input) : (sub match replace (tail input))
   where
     isPrefix = (length match <= length input) && (and $ zipWith (==) match input)
-
--- Builtins
-
-letFunc :: [String] -> IO ()
-letFunc (var:"=":val:[]) = do
-  setEnv var val
-letFunc _ = putStrLn "let syntax error"
-
-
-printEnvVars :: [String] -> IO [()]
-printEnvVars = mapM printEnvVar 
-
-printEnvVar :: String -> IO ()
-printEnvVar var = do
-  result <- lookupEnv var
-  case result of
-    Just value -> putStrLn (var ++ "=" ++ value)
-    Nothing -> putStrLn ("variable " ++ var ++ " is not set")
 
