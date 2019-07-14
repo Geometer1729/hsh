@@ -5,13 +5,13 @@ import Control.Applicative
 
 data Command = Extract String Command | Pipe Command Command | Exec String [String] | Background Command | Write Command String deriving(Show)
 
-parseCommand :: String -> Command
+parseCommand :: String -> Maybe Command
 parseCommand s = let parser = readP_to_S cmdParser
                      parses = parser s
                      finished = filter ((=="") . snd) parses
                 in if length finished == 1
-                    then fst . head $ finished
-                    else error $ show parses
+                    then Just . fst . head $ finished
+                    else Nothing
 cmdParser :: ReadP Command
 cmdParser = parseExtract <++ parseSubExtract
 
