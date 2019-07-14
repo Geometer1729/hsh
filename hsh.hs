@@ -11,8 +11,8 @@ import Data.Text (pack,replace)
 import CD (cd)
 
 main = do
-  prompt
-  continue <- (getLine >>= handleLine)
+  setEnv "SHELL" "/bin/hsh"
+  continue <- (prompt >> getLine >>= handleLine)
   if continue then main else return ()
   
 
@@ -25,6 +25,7 @@ handleLine input = do
     ("exit":_) -> return False
     ("cd":args) -> cd args >> return True
     ("print":args) -> printEnvVars args >> return True
+    ("let":args) -> letFunc args >> return True
     (cmd:args) -> runCmd cmd args >> return True
 
 printEnvVars :: [String] -> IO [()]
@@ -34,7 +35,7 @@ printEnvVar :: String -> IO ()
 printEnvVar var = do
   result <- lookupEnv var
   case result of
-    Just value -> putStrLn (var ++ " " ++ value)
+    Just value -> putStrLn (var ++ "=" ++ value)
     Nothing -> putStrLn ("variable " ++ var ++ " is not set")
 
 runCmd :: String -> [String] -> IO ()
@@ -55,6 +56,7 @@ prompt = do
   host <- fmap init $ readFile "/etc/hostname"
   pwd <- getEnv "PWD"
   pwd' <- tildify pwd
+  -- this should eventually be read from a config
   let prompt = (color 32 name) ++ "@" ++ (color 33 host) ++ ":" ++ (color 36 pwd') ++ (if isRoot then "#" else "$") ++ " "
   putStr prompt 
   hFlush stdout
@@ -77,3 +79,9 @@ sub _ _ [] = []
 sub match replace input = if isPrefix then replace ++ (sub match replace (drop (length match) input)) else (head input) : (sub match replace (tail input))
   where
     isPrefix = (length match <= length input) && (and $ zipWith (==) match input)
+
+
+letFunc :: [String] -> IO ()
+letFunc (var:"=":val:[]) = do
+  setEnv var val
+letFunc _ = putStrLn "let syntax error"
