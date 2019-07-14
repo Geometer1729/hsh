@@ -11,6 +11,7 @@ main = do
   if continue then main else return ()
   
 handleLine :: String -> IO Bool
+handleLine "" = return True
 handleLine input = case parseCommand input of
   Nothing -> putStrLn "syntax error" >> return True 
   Just cmd -> handleCmd cmd

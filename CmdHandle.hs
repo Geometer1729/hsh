@@ -12,6 +12,13 @@ import System.Posix.Directory
 import System.Posix.User
 import System.Process
 
+data Context = Context {
+   wait :: Bool 
+  ,stin  :: Maybe Handle 
+  ,stout :: Maybe Handle
+  ,sterr :: Maybe Handle
+}
+
 handleCmd :: Command -> IO Bool
 handleCmd = contextHandleCmd defContext
 
@@ -24,14 +31,8 @@ contextHandleCmd context (Pipe cl cr) = do
   lexit <- contextHandleCmd lcontext cl
   rexit <- contextHandleCmd rcontext cr
   return (lexit && rexit) --pipe succesfull iff both succed
+contextHandleCmd context (Background cmd) = contextHandleCmd  context{wait=False} cmd
 
-
-data Context = Context {
-   wait :: Bool 
-  ,stin  :: Maybe Handle 
-  ,stout :: Maybe Handle
-  ,sterr :: Maybe Handle
-}
 
 defContext :: Context
 defContext = Context True Nothing Nothing Nothing

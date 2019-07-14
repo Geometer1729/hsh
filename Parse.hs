@@ -14,13 +14,30 @@ parseCommand s = let parser = readP_to_S cmdParser
                     else Nothing
 
 cmdParser :: ReadP Command
-cmdParser = parseExtract <++ parseSubExtract
+cmdParser          = parseBackground <++ parseSubBackground
+parseSubBackground = parseExtract    <++ parseSubExtract
+parseSubExtract    = parsePipe       <++ parseSubPipe
+parseSubPipe       = parseExec
 
-parseSubExtract :: ReadP Command
-parseSubExtract = parsePipe <++ parseSubPipe
+parseBackground :: ReadP Command
+parseBackground = do
+  cmd <- parseSubBackground
+  string " &"
+  return $ Background cmd
 
-parseSubPipe :: ReadP Command
-parseSubPipe = parseExec
+parseExtract :: ReadP Command
+parseExtract = do
+  var <- parseWord
+  string " <- "
+  cmd <- parseSubExtract
+  return $ Extract var cmd
+
+parsePipe :: ReadP Command
+parsePipe = do
+  cmd1 <- parseSubPipe
+  string " >>= "
+  cmd2 <- parseSubExtract
+  return $ Pipe cmd1 cmd2
 
 parseExec :: ReadP Command
 parseExec = do
@@ -36,17 +53,5 @@ parseWord = do
 parseArgs :: ReadP [String]
 parseArgs = many (char ' ' >> parseWord)
 
-parseExtract :: ReadP Command
-parseExtract = do
-  var <- parseWord
-  string " <- "
-  cmd <- parseSubExtract
-  return $ Extract var cmd
 
-parsePipe :: ReadP Command
-parsePipe = do
-  cmd1 <- parseSubPipe
-  string " >>= "
-  cmd2 <- parseSubExtract
-  return $ Pipe cmd1 cmd2
 
