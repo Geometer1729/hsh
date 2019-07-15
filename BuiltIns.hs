@@ -5,6 +5,7 @@ module BuiltIns where
 import System.Environment
 import System.Directory
 import System.Posix.Directory
+import Control.Monad
 
 cd :: [String] -> IO Bool
 cd [] = lookupEnv "HOME" >>= \case 
@@ -35,8 +36,21 @@ tryCd path = do
       putStrLn ("no such file or directory") >> return False
 
 letFunc :: [String] -> IO Bool
-letFunc (var:"=":val:[]) = setEnv var val >> return True
-letFunc _ = putStrLn "let syntax error" >> return False
+letFunc args = let
+    pre  = takeWhile (/= "=") args
+    var = head pre
+    post = tail $ dropWhile (/= "=") args
+    valid = and [not . null $ pre , not . null $ takeWhile (/= "=") args,not . null $ post ]
+    value = case pre of
+      [var] -> unwords post
+      (func:args) -> "\\" ++ (unwords . tail $ pre) ++ " -> " ++ unwords post
+    in do
+      when valid (setEnv var value)
+      putStrLn $ "Var: "  ++ var
+      putStrLn $ "Val: "  ++ value
+      return valid
+
+    
 
 
 printEnvVars :: [String] -> IO Bool
