@@ -6,9 +6,18 @@ import System.IO
 import System.Posix.User
 
 main = do
-  setEnv "SHELL" "/bin/hsh"
-  continue <- (prompt >> getLine >>= handleLine)
-  if continue then main else return ()
+  args <- getArgs
+  runFiles args
+  if null args then loop else return () 
+
+loop = do
+  prompt
+  notEOF <- hIsOpen stdin
+  if notEOF then do
+    line <- hGetLine stdin
+    nonExit <- handleLine line
+    if nonExit then loop else return ()
+  else return ()
   
 
 prompt :: IO ()

@@ -22,6 +22,7 @@ data Context = Context {
 
 handleLine :: String -> IO Bool
 handleLine "" = return True
+handleLine ('#':_) = return True
 handleLine input = case parseCommand input of
   Nothing -> putStrLn "syntax error" >> return True 
   Just cmd -> handleCmd cmd
@@ -50,6 +51,7 @@ execOrBuiltin cmd rawArgs context = do
     ("cd",args)    -> withoutExit $ cd args 
     ("print",args) -> withoutExit $ printEnvVars args 
     ("let",args)   -> withoutExit $ letFunc args 
+    (".",args)     -> runFiles args
     (cmd,args)     -> withoutExit $ runExec cmd args context
 
 withoutExit :: IO Bool -> IO (Bool,Bool)
@@ -103,5 +105,34 @@ sub match replace input = if isPrefix then replace ++ (sub match replace (drop (
 dosubs :: [(String,String)] -> String -> String
 dosubs [] s = s
 dosubs ((m,r):xs) s = dosubs xs (sub m r s)
+
+runFiles :: [String] -> IO (Bool,Bool)
+runFiles [] = return (True,True)
+runFiles (x:xs) = do
+  (l,r) <- runFile x
+  if l then do
+    (l2,r2) <- runFiles xs
+    return (True,r && r2)
+  else do
+    return (False,r)
+
+runFile :: String -> IO (Bool,Bool)
+runFile path = do
+ valid <- doesFileExist path
+ if valid then do
+   contents <- readFile path
+   let ls = lines contents
+   exited <- runLines ls
+   return (exited,True)
+  else putStrLn "file not found" >> return (True,False)
+
+runLines :: [String] -> IO Bool
+runLines [] = return True
+runLines (x:xs) = do
+  l <- handleLine x
+  if l then do
+    runLines xs
+  else do
+    return False
 
 

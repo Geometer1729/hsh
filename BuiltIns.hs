@@ -46,8 +46,6 @@ letFunc args = let
       (func:args) -> "\\" ++ (unwords . tail $ pre) ++ " -> " ++ unwords post
     in do
       when valid (setEnv var value)
-      putStrLn $ "Var: "  ++ var
-      putStrLn $ "Val: "  ++ value
       return valid
 
     

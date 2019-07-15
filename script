@@ -1,0 +1,6 @@
+#!/bin/hsh
+let f x = ls --color=auto x
+f .
+f ..
+print f
+echo hi
