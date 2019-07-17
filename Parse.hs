@@ -22,20 +22,25 @@ parseSubPipe       = parseExec
 parseBackground :: ReadP Command
 parseBackground = do
   cmd <- parseSubBackground
-  string " &"
+  eatSpace
+  string "&"
   return $ Background cmd
 
 parseExtract :: ReadP Command
 parseExtract = do
   var <- parseWord
-  string " <- "
+  eatSpace
+  string "<-"
+  eatSpace
   cmd <- parseSubExtract
   return $ Extract var cmd
 
 parsePipe :: ReadP Command
 parsePipe = do
   cmd1 <- parseSubPipe
-  string " >>= "
+  eatSpace
+  string ">>="
+  eatSpace
   cmd2 <- parseSubExtract
   return $ Pipe cmd1 cmd2
 
@@ -48,10 +53,11 @@ parseExec = do
 parseWord :: ReadP String
 parseWord = do
   result <- munch (/= ' ')
-  if result `elem` ["<-",">>=","&&","||","&"] then pfail else return result
+  if result `elem` ["","<-",">>=","&&","||","&"] then pfail else return result
 
 parseArgs :: ReadP [String]
-parseArgs = many (char ' ' >> parseWord)
+parseArgs = many (eatSpace >> parseWord)
 
-
+eatSpace :: ReadP ()
+eatSpace = (many1 $ char ' ') >> return ()
 

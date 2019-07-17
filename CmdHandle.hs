@@ -27,7 +27,9 @@ handleLine input = case parseCommand input of
   Nothing -> putStrLn "syntax error" >> return True 
   Just cmd -> handleCmd cmd
 handleCmd :: Command -> IO Bool
-handleCmd = contextHandleCmd defContext
+handleCmd cmd = do
+  print cmd
+  contextHandleCmd defContext cmd
 
 contextHandleCmd :: Context -> Command -> IO Bool
 contextHandleCmd context (Exec cmd args) = fmap fst $ runVarOrExec cmd args context
@@ -69,7 +71,9 @@ runVarOrExec path args context = lookupEnv path >>= \case
     in do
       x <- handleLine output' 
       return (x,True)
-  Just _  -> execOrBuiltin path args context
+  Just string  -> do
+    x <- handleLine (string ++ " " ++ unwords args)
+    return (x,True)
   Nothing -> execOrBuiltin path args context
   
 
@@ -109,22 +113,22 @@ dosubs ((m,r):xs) s = dosubs xs (sub m r s)
 runFiles :: [String] -> IO (Bool,Bool)
 runFiles [] = return (True,True)
 runFiles (x:xs) = do
-  (l,r) <- runFile x
+  (l,r) <- runFile False x
   if l then do
     (l2,r2) <- runFiles xs
     return (True,r && r2)
   else do
     return (False,r)
 
-runFile :: String -> IO (Bool,Bool)
-runFile path = do
+runFile :: Bool -> String -> IO (Bool,Bool)
+runFile silent path = do
  valid <- doesFileExist path
  if valid then do
    contents <- readFile path
    let ls = lines contents
    exited <- runLines ls
    return (exited,True)
-  else putStrLn "file not found" >> return (True,False)
+  else when (not silent) (putStrLn "file not found") >> return (True,False)
 
 runLines :: [String] -> IO Bool
 runLines [] = return True

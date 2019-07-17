@@ -4,23 +4,31 @@ import Parse
 import System.Environment
 import System.IO
 import System.Posix.User
+import System.Console.Readline
+import Control.Monad
+import Data.Maybe
+
 
 main = do
   args <- getArgs
   runFiles args
-  if null args then loop else return () 
+  if null args then hshrc >> loop else return () 
+
 
 loop = do
-  prompt
+  prmpt <- prompt
   notEOF <- hIsOpen stdin
-  if notEOF then do
-    line <- hGetLine stdin
-    nonExit <- handleLine line
-    if nonExit then loop else return ()
-  else return ()
+  when notEOF (do
+    input <- readline prmpt
+    print input
+    when (isJust input) (do
+      let line = fromJust input
+      nonExit <-handleLine line
+      addHistory line
+      when nonExit loop))
   
 
-prompt :: IO ()
+prompt :: IO String
 prompt = do
   name <- getEffectiveUserName
   isRoot <- fmap (== 0) getRealUserID
@@ -29,9 +37,14 @@ prompt = do
   pwd' <- tildify pwd
   -- this should eventually be read from a config
   let prompt = (color 32 name) ++ "@" ++ (color 33 host) ++ ":" ++ (color 36 pwd') ++ (if isRoot then "#" else "$") ++ " "
-  putStr prompt 
-  hFlush stdout
+  return prompt 
 
 color :: Int -> String -> String
 color n s = "\ESC[01;" ++ show n ++ "m" ++ s ++ "\ESC[0m"
 
+hshrc :: IO ()
+hshrc = do
+  home <- lookupEnv "HOME"
+  case home of
+    Nothing -> return ()
+    Just path -> runFile True (path ++ "/.hshrc") >> return ()
