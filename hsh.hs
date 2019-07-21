@@ -4,7 +4,7 @@ import Parse
 import System.Environment
 import System.IO
 import System.Posix.User
-import System.Console.Readline
+import System.Console.Readline hiding( getPrompt )
 import Control.Monad
 import Data.Maybe
 
@@ -16,10 +16,10 @@ main = do
 
 
 loop = do
-  prmpt <- prompt
+  prompt <- getPrompt
   notEOF <- hIsOpen stdin
   when notEOF (do
-    input <- readline prmpt
+    input <- readline prompt
     print input
     when (isJust input) (do
       let line = fromJust input
@@ -28,8 +28,8 @@ loop = do
       when nonExit loop))
   
 
-prompt :: IO String
-prompt = do
+getPrompt :: IO String
+getPrompt = do
   name <- getEffectiveUserName
   isRoot <- fmap (== 0) getRealUserID
   host <- fmap init $ readFile "/etc/hostname"
