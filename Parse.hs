@@ -6,7 +6,7 @@ import Control.Applicative
 data Command = Extract String Command | Pipe Command Command | Exec String [String] | Background Command | Write Command String deriving(Show)
 
 parseCommand :: String -> Maybe Command
-parseCommand s = let parser = readP_to_S cmdParser
+parseCommand s = let parser = readP_to_S (cmdParser)
                      parses = parser s
                      finished = filter ((=="") . snd) parses
                 in if length finished == 1

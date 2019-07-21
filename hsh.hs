@@ -1,5 +1,6 @@
 {-# LANGUAGE LambdaCase #-}
 import CmdHandle
+import Completer
 import Parse
 import System.Environment
 import System.IO
@@ -12,20 +13,20 @@ import Data.Maybe
 main = do
   args <- getArgs
   runFiles args
+  readInitFile "/home/bbrian/.inputrc"
+  setAttemptedCompletionFunction (Just completer)
   if null args then hshrc >> loop else return () 
 
 
 loop = do
   prompt <- getPrompt
-  notEOF <- hIsOpen stdin
-  when notEOF (do
-    input <- readline prompt
-    print input
-    when (isJust input) (do
-      let line = fromJust input
-      nonExit <-handleLine line
-      addHistory line
-      when nonExit loop))
+  input <- readline prompt
+  print input
+  when (isJust input) (do
+    let line = fromJust input
+    nonExit <-handleLine line
+    addHistory line
+    when nonExit loop)
   
 
 getPrompt :: IO String
@@ -48,3 +49,4 @@ hshrc = do
   case home of
     Nothing -> return ()
     Just path -> runFile True (path ++ "/.hshrc") >> return ()
+
