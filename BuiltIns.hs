@@ -35,18 +35,12 @@ tryCd path = do
     else 
       putStrLn ("no such file or directory") >> return False
 
-letFunc :: [String] -> IO Bool
-letFunc args = let
-    pre  = takeWhile (/= "=") args
-    var = head pre
-    post = tail $ dropWhile (/= "=") args
-    valid = and [not . null $ pre , not . null $ takeWhile (/= "=") args,not . null $ post ]
-    value = case pre of
-      [var] -> unwords post
-      (func:args) -> "\\" ++ (unwords . tail $ pre) ++ " -> " ++ unwords post
-    in do
-      when valid (setEnv var value)
-      return valid
+letFunc :: [String] -> [String] -> IO Bool
+letFunc left right = let
+    value = case left of
+      [var] -> unwords right
+      (func:args) -> "\\" ++ (unwords . tail $ left) ++ " -> " ++ unwords right
+    in setEnv (head left) value >> return False
 
     
 

@@ -5,11 +5,14 @@ Has
   Basic commands with arguments
   Pipeing with >>=
   Background with &
+  logic 
+    if then else 
+    && and ||
   Built-ins
     cd 
-    let var = value
-      supports lambda functions and function definitions
     print var 
+  let
+    supports lambda functions and function definitions
 
 
 Needs
@@ -19,10 +22,10 @@ Needs
     ++
     arithmatic
   Call to haskell
-  let as a primitive
-  Comand vs line distinction
   implement extract and forward
-  logic control ite && ||
+  Smarter handeling of context for logical statments
+  More intelegent waiting in pipes
+  Finish implementing cmdhandle
 
   
   

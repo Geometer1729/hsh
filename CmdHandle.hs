@@ -13,6 +13,8 @@ import System.Posix.Directory
 import System.Posix.User
 import System.Process
 
+-- IO (Bool,Bool) is shell continue , cmd succes
+
 data Context = Context {
    wait :: Bool 
   ,stin  :: Maybe Handle 
@@ -23,24 +25,36 @@ data Context = Context {
 handleLine :: String -> IO Bool
 handleLine "" = return True
 handleLine ('#':_) = return True
-handleLine input = case parseCommand input of
+handleLine input = case parseLine input of
   Nothing -> putStrLn "syntax error" >> return True 
-  Just cmd -> handleCmd cmd
-handleCmd :: Command -> IO Bool
-handleCmd cmd = do
-  print cmd
-  contextHandleCmd defContext cmd
+  Just line -> handleLineData line
 
-contextHandleCmd :: Context -> Command -> IO Bool
-contextHandleCmd context (Exec cmd args) = fmap fst $ runVarOrExec cmd args context
+handleLineData :: Line -> IO Bool
+handleLineData line = do
+  print line
+  contextHandleLine defContext line
+
+contextHandleLine :: Context -> Line -> IO Bool
+contextHandleLine _ (Extract var cmd) = undefined
+contextHandleLine _ (Let left right) = letFunc left right
+contextHandleLine c (Plain cmd) = fmap fst $ contextHandleCmd c cmd
+
+contextHandleCmd :: Context -> Command -> IO (Bool,Bool)
+contextHandleCmd context (Exec cmd args) = runVarOrExec cmd args context
 contextHandleCmd context (Pipe cl cr) = do
   (readEnd,writeEnd) <- createPipe
   let lcontext = context{stout = Just writeEnd}
   let rcontext = context{stin  = Just readEnd }
-  lexit <- contextHandleCmd lcontext cl
-  rexit <- contextHandleCmd rcontext cr
-  return (lexit && rexit) --pipe succesfull iff both succed
+  (lexit,lsuc) <- contextHandleCmd lcontext cl
+  (rexit,rsuc) <- contextHandleCmd rcontext cr
+  return (lexit || rexit , lsuc && rsuc ) --pipe succesfull iff both succed
 contextHandleCmd context (Background cmd) = contextHandleCmd  context{wait=False} cmd
+contextHandleCmd context (ITE i t e) = do -- make pipes respect this better
+  (ex,r) <- contextHandleCmd context i
+  if (not ex) then contextHandleCmd context (if r then t else e) else return (False,True)
+contextHandleCmd context (Or l r) = do
+  (v,ex) <- contextHandleCmd context l
+  undefined
 
 defContext :: Context
 defContext = Context True Nothing Nothing Nothing
@@ -52,7 +66,6 @@ execOrBuiltin cmd rawArgs context = do
     ("exit",_)     -> return (False,True)
     ("cd",args)    -> withoutExit $ cd args 
     ("print",args) -> withoutExit $ printEnvVars args 
-    ("let",args)   -> withoutExit $ letFunc args 
     (".",args)     -> runFiles args
     (cmd,args)     -> withoutExit $ runExec cmd args context
 
