@@ -1,15 +1,16 @@
 {-# LANGUAGE LambdaCase #-}
 module BuiltIns where
 
-import System.Process
-import System.Environment
-import System.Directory
-import System.Process
-import System.IO
-import Data.Default
-import System.Posix.Directory
 import Control.Monad
+import Data.Default
+import System.Directory
+import System.Environment
+import System.IO
+import System.Posix.Directory
+import System.Process
+import System.Exit
 import Types
+
 import {-# Source #-} CmdHandle
 
 cd :: [String] -> IO Bool
@@ -60,9 +61,11 @@ printEnvVar var = do
 lineMap :: [String] -> Context -> IO CmdReturn
 lineMap (f:cmd) context = do
   (readEnd,writeEnd) <- createPipe
-  cmdRet <- contextHandleLine context{stout = Just writeEnd} (unwords cmd)
+  cmdRet <- contextHandleLine context{stout = Just writeEnd,wait=PassHandles} (unwords cmd)
   lineRets <- lineMapLoop f readEnd context
-  return $ mconcat (cmdRet:lineRets)
+  awaitSuc <-  mapM waitForProcess (awaits cmdRet)
+  let cmdRet' = cmdRet <> def{succes=and . map  (== ExitSuccess) $ awaitSuc}
+  return $ mconcat (cmdRet':lineRets)
 
 
 lineMapLoop :: String -> Handle -> Context -> IO [CmdReturn]

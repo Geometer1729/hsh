@@ -2,10 +2,12 @@
 module CmdHandle where
 
 import BuiltIns
-import Types
 import Control.Monad
+import Data.Default
+import Data.Function
 import Data.Maybe
 import Parse
+import SubUtils
 import System.Directory
 import System.Environment
 import System.Exit
@@ -13,9 +15,7 @@ import System.IO
 import System.Posix.Directory
 import System.Posix.User
 import System.Process
-import Data.Default
-import Data.Function
-import SubUtils
+import Types
 
 handleLine :: String -> IO CmdReturn
 handleLine = contextHandleLine def
