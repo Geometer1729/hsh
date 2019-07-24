@@ -4,8 +4,10 @@ module BuiltIns where
 --import System.Process
 import System.Environment
 import System.Directory
+import Data.Default
 import System.Posix.Directory
 import Control.Monad
+import Types
 
 cd :: [String] -> IO Bool
 cd [] = lookupEnv "HOME" >>= \case 
@@ -35,12 +37,12 @@ tryCd path = do
     else 
       putStrLn ("no such file or directory") >> return False
 
-letFunc :: [String] -> [String] -> IO Bool
+letFunc :: [String] -> [String] -> IO CmdReturn
 letFunc left right = let
     value = case left of
       [var] -> unwords right
       (func:args) -> "\\" ++ (unwords . tail $ left) ++ " -> " ++ unwords right
-    in setEnv (head left) value >> return False
+    in setEnv (head left) value >> return def
 
     
 

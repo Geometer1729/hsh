@@ -2,17 +2,8 @@ module Parse where
   
 import Text.ParserCombinators.ReadP hiding (many)
 import Control.Applicative 
+import Types
 
-data Line = Extract String Command | Let [String] [String] | Plain Command deriving (Show)
-data  Command = Background Command 
-              | ITE Command Command Command 
-              | Or Command Command 
-              | And Command Command 
-              | Seq Command Command 
-              | Pipe  Command Command 
-              | Exec String [String] 
-              | Infix Command String Command
-              deriving(Show)
 
 
 parseLine :: String -> Maybe Line

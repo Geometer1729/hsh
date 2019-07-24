@@ -8,6 +8,7 @@ import System.Posix.User
 import System.Console.Readline hiding( getPrompt )
 import Control.Monad
 import Data.Maybe
+import Types
 
 
 main = do
@@ -24,7 +25,7 @@ loop = do
   print input
   when (isJust input) (do
     let line = fromJust input
-    nonExit <-handleLine line
+    nonExit <-fmap (not . shellExit) $ handleLine line
     addHistory line
     when nonExit loop)
   
