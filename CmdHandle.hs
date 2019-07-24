@@ -26,7 +26,7 @@ contextHandleLine _ ('#':_) = return def
 contextHandleLine context input = case parseLine input of
   Nothing -> putStrLn "syntax error" >> return def{succes=False} 
   Just line -> do
-    print line
+    when debug $ print line
     contextHandleLineData context line
 
 contextHandleLineData :: Context -> Line -> IO CmdReturn
@@ -76,6 +76,8 @@ execOrBuiltin cmd rawArgs context = do
     ("print",args)   -> fromSuc $ printEnvVars args 
     ("lineMap",args) -> lineMap args context
     (".",args)       -> runFiles args
+    ("True",[])      -> true
+    ("False",[])     -> false
     (cmd,args)       -> runExec cmd args context
 
 fromSuc :: IO Bool -> IO CmdReturn

@@ -4,6 +4,9 @@ import Data.Default
 import System.Process
 import System.IO
 
+debug = False
+-- not really a type but it's convenient if most things import this
+
 data WaitPlan = Dont | Do | PassHandles
 
 data CmdReturn = CmdReturn {

@@ -72,3 +72,9 @@ lineMapLoop f h context = do
   done <- hIsEOF h
   if done then return [r] else do
     fmap (r:) $ lineMapLoop f h context
+
+true :: IO CmdReturn
+true = return def
+
+false :: IO CmdReturn
+false = return def{succes=False}
