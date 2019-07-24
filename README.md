@@ -23,9 +23,3 @@ Needs
     arithmatic
   Call to haskell
   implement extract and forward
-  Smarter handeling of context for logical statments
-  More intelegent waiting in pipes
-  Finish implementing cmdhandle
-
-  
-  

@@ -14,6 +14,7 @@ import System.Posix.Directory
 import System.Posix.User
 import System.Process
 import Data.Default
+import Data.Function
 
 handleLine :: String -> IO CmdReturn
 handleLine "" = return def
@@ -36,17 +37,33 @@ contextHandleCmd :: Context -> Command -> IO CmdReturn
 contextHandleCmd context (Exec cmd args) = runVarOrExec cmd args context
 contextHandleCmd context (Pipe cl cr) = do
   (readEnd,writeEnd) <- createPipe
-  let lcontext = context{stout = Just writeEnd}
-  let rcontext = context{stin  = Just readEnd }
+  let lcontext = context{stout = Just writeEnd,wait = PassHandles}
+  let rcontext = context{stin  = Just readEnd ,wait = PassHandles}
   lret <- contextHandleCmd lcontext cl
   rret <- contextHandleCmd rcontext cr
-  return $ lret <> rret
+  let handles = awaits lret ++ awaits rret
+  case wait context of
+    Do -> do
+      awaitSucs <- mapM waitForProcess handles
+      return $ lret <> rret <> def{succes = and . map (== ExitSuccess) $ awaitSucs}
+    Dont -> return $ (lret <> rret){awaits = [] }
+    PassHandles -> return $ lret <> rret
 contextHandleCmd context (Background cmd) = contextHandleCmd  context{wait=Dont} cmd
-contextHandleCmd context (ITE i t e) = do -- make pipes respect this better
+contextHandleCmd context (ITE i t e) = do 
   iret <- contextHandleCmd context i
   if shellExit iret then return def{shellExit=True} else contextHandleCmd context (if succes iret then t else e)
 contextHandleCmd context (Or l r) = do
-  undefined
+  lret <- contextHandleCmd context l
+  if (succes lret) || (shellExit lret) then return lret else do 
+      rret <- contextHandleCmd context r
+      return $ (lret <> rret) { succes = succes lret || succes rret}
+contextHandleCmd context (And l r) = do
+  lret <- contextHandleCmd context l
+  if (not . succes $ lret) || (shellExit $ lret) then return lret else do 
+      rret <- contextHandleCmd context r
+      return $ lret <> rret
+contextHandleCmd context (Seq l r) = on (liftM2 (<>)) (contextHandleCmd context) l r
+
 
 execOrBuiltin :: String -> [String] -> Context -> IO CmdReturn
 execOrBuiltin cmd rawArgs context = do
