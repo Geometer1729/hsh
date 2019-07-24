@@ -28,9 +28,9 @@ parseExtract = do
 
 parseLet :: ReadP Line
 parseLet = do
-  string "let "
+  string "let"
   left <- parseArgs
-  string "= "
+  string " ="
   right <- parseArgs
   return $ Let left right
 

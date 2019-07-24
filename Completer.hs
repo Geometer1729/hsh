@@ -6,7 +6,17 @@ import System.Environment
 import Control.Monad
 import Data.Maybe
 import Data.List
-import CmdHandle
+import SubUtils
+
+completerInit = do
+  home <- lookupEnv "HOME"
+  case home of 
+    Nothing -> return ()
+    Just path -> do
+      let inputrc = path ++ "/.inputrc"
+      exists <- doesFileExist inputrc
+      when exists $ readInitFile inputrc 
+  setAttemptedCompletionFunction (Just completer)
 
 completer :: String -> Int -> Int -> IO (Maybe (String,[String]))
 completer word 0 _ = do
@@ -43,7 +53,6 @@ executablesIn path = do
 
 isExecutable :: String -> IO Bool
 isExecutable string = fmap executable $ getPermissions string
-  
 
 splitPath = splitOn ':'
 splitSlash = splitOn '/'

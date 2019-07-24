@@ -9,20 +9,19 @@ import System.Console.Readline hiding( getPrompt )
 import Control.Monad
 import Data.Maybe
 import Types
+import SubUtils
 
 
 main = do
   args <- getArgs
   runFiles args
-  readInitFile "/home/bbrian/.inputrc"
-  setAttemptedCompletionFunction (Just completer)
+  completerInit
   if null args then hshrc >> loop else return () 
 
 
 loop = do
   prompt <- getPrompt
   input <- readline prompt
-  print input
   when (isJust input) (do
     let line = fromJust input
     nonExit <-fmap (not . shellExit) $ handleLine line

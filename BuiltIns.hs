@@ -1,13 +1,16 @@
 {-# LANGUAGE LambdaCase #-}
 module BuiltIns where
 
---import System.Process
+import System.Process
 import System.Environment
 import System.Directory
+import System.Process
+import System.IO
 import Data.Default
 import System.Posix.Directory
 import Control.Monad
 import Types
+import {-# Source #-} CmdHandle
 
 cd :: [String] -> IO Bool
 cd [] = lookupEnv "HOME" >>= \case 
@@ -44,9 +47,6 @@ letFunc left right = let
       (func:args) -> "\\" ++ (unwords . tail $ left) ++ " -> " ++ unwords right
     in setEnv (head left) value >> return def
 
-    
-
-
 printEnvVars :: [String] -> IO Bool
 printEnvVars vars = fmap and $ mapM printEnvVar vars
 
@@ -57,3 +57,18 @@ printEnvVar var = do
     Just value -> putStrLn (var ++ "=" ++ value) >> return True
     Nothing -> putStrLn ("variable " ++ var ++ " is not set") >> return False
 
+lineMap :: [String] -> Context -> IO CmdReturn
+lineMap (f:cmd) context = do
+  (readEnd,writeEnd) <- createPipe
+  cmdRet <- contextHandleLine context{stout = Just writeEnd} (unwords cmd)
+  lineRets <- lineMapLoop f readEnd context
+  return $ mconcat (cmdRet:lineRets)
+
+
+lineMapLoop :: String -> Handle -> Context -> IO [CmdReturn]
+lineMapLoop f h context = do
+  line <- hGetLine h
+  r <- contextHandleLine context (f ++ " " ++ line)
+  done <- hIsEOF h
+  if done then return [r] else do
+    fmap (r:) $ lineMapLoop f h context

@@ -15,23 +15,24 @@ import System.Posix.User
 import System.Process
 import Data.Default
 import Data.Function
+import SubUtils
 
 handleLine :: String -> IO CmdReturn
-handleLine "" = return def
-handleLine ('#':_) = return def
-handleLine input = case parseLine input of
+handleLine = contextHandleLine def
+
+contextHandleLine :: Context -> String -> IO CmdReturn
+contextHandleLine _ "" = return def
+contextHandleLine _ ('#':_) = return def
+contextHandleLine context input = case parseLine input of
   Nothing -> putStrLn "syntax error" >> return def{succes=False} 
-  Just line -> handleLineData line
+  Just line -> do
+    print line
+    contextHandleLineData context line
 
-handleLineData :: Line -> IO CmdReturn
-handleLineData line = do
-  print line
-  contextHandleLine def line
-
-contextHandleLine :: Context -> Line -> IO CmdReturn
-contextHandleLine _ (Extract var cmd) = undefined
-contextHandleLine _ (Let left right) = letFunc left right
-contextHandleLine c (Plain cmd) = contextHandleCmd c cmd
+contextHandleLineData :: Context -> Line -> IO CmdReturn
+contextHandleLineData _ (Extract var cmd) = undefined
+contextHandleLineData _ (Let left right) = letFunc left right
+contextHandleLineData c (Plain cmd) = contextHandleCmd c cmd
 
 contextHandleCmd :: Context -> Command -> IO CmdReturn
 contextHandleCmd context (Exec cmd args) = runVarOrExec cmd args context
@@ -65,15 +66,17 @@ contextHandleCmd context (And l r) = do
 contextHandleCmd context (Seq l r) = on (liftM2 (<>)) (contextHandleCmd context) l r
 
 
+
 execOrBuiltin :: String -> [String] -> Context -> IO CmdReturn
 execOrBuiltin cmd rawArgs context = do
   args' <- mapM deTildify rawArgs
   case (cmd,args') of
-    ("exit",_)     -> return def{shellExit=True}
-    ("cd",args)    -> fromSuc $ cd args 
-    ("print",args) -> fromSuc $ printEnvVars args 
-    (".",args)     -> runFiles args
-    (cmd,args)     -> runExec cmd args context
+    ("exit",_)       -> return def{shellExit=True}
+    ("cd",args)      -> fromSuc $ cd args 
+    ("print",args)   -> fromSuc $ printEnvVars args 
+    ("lineMap",args) -> lineMap args context
+    (".",args)       -> runFiles args
+    (cmd,args)       -> runExec cmd args context
 
 fromSuc :: IO Bool -> IO CmdReturn
 fromSuc = fmap (\s -> def{succes=s})
@@ -88,9 +91,9 @@ runVarOrExec path args context = lookupEnv path >>= \case
     extraArgs = drop (length vars) args
     output' = dosubs subs (output ++ unwords extraArgs)
     in do
-      handleLine output' 
+      contextHandleLine context output' 
   Just string  -> do
-    handleLine (string ++ " " ++ unwords args)
+    contextHandleLine context (string ++ " " ++ unwords args) 
   Nothing -> execOrBuiltin path args context
   
 runExec :: String -> [String] -> Context -> IO CmdReturn
@@ -112,29 +115,8 @@ runExec path args context = do
     putStrLn (path ++ " not found")
     return $ CmdReturn False False [] 
 
--- sub utils
 
-deTildify :: String -> IO String
-deTildify  s = do
-  home <- getEnv "HOME"
-  return $ sub "~" home s
-
-tildify :: String -> IO String
-tildify s = do
-  home <- getEnv "HOME"
-  return $ sub home "~" s
-  
-sub :: String -> String -> String -> String
-sub _ _ [] = []
-sub match replace input = if isPrefix then replace ++ (sub match replace (drop (length match) input)) else (head input) : (sub match replace (tail input))
-  where
-    isPrefix = (length match <= length input) && (and $ zipWith (==) match input)
-
-dosubs :: [(String,String)] -> String -> String
-dosubs [] s = s
-dosubs ((m,r):xs) s = dosubs xs (sub m r s)
-
--- script utils
+--script Utils
 
 runFiles :: [String] -> IO CmdReturn
 runFiles [] = return def
@@ -163,5 +145,3 @@ runLines (x:xs) = do
     runLines xs
   else do
     return l
-
-

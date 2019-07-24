@@ -22,3 +22,4 @@ Needs
     * arithmatic
   * Call to haskell
   * implement extract and forward
+  * Configurable Prompt idealy parsed from Env variabile
