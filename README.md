@@ -27,6 +27,9 @@ Needs
   * Call to haskell
   * implement extract and forward
   * Configurable Prompt ideally parsed from Env variable
+  * Variable / ~ expansion in let statments
+  * better error messages
+  * execute by absolute filePath or path from current working directory
 
 Installation
   Several Cabal Packages are required to compile
