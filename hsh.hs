@@ -5,6 +5,7 @@ import Parse
 import System.Environment
 import System.IO
 import System.Posix.User
+import System.Posix.Directory
 import System.Console.Readline hiding( getPrompt )
 import Control.Monad
 import Data.Maybe
@@ -35,7 +36,7 @@ getPrompt = do
   name <- getEffectiveUserName
   isRoot <- fmap (== 0) getRealUserID
   host <- fmap init $ readFile "/etc/hostname"
-  pwd <- getEnv "PWD"
+  pwd <- getWorkingDirectory 
   pwd' <- tildify pwd
   -- this should eventually be read from a config
   let prompt = (color 32 name) ++ "@" ++ (color 33 host) ++ ":" ++ (color 36 pwd') ++ (if isRoot then "#" else "$") ++ " "
