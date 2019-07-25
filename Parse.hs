@@ -5,7 +5,7 @@ import Types
 import Control.Applicative
 import Control.Monad
 import Data.List
-
+import Data.Bits
 
 parseLine :: String -> Maybe Line
 parseLine s = let 
@@ -57,13 +57,20 @@ infixes :: [String]
 infixes = ["||","&&",">>",">>="]
 
 parseCmd :: ReadP Command
-parseCmd = (do
+parseCmd = fmap liftInfix (do
     ni <- parseNonInfix
     eatSpace
     infixWord <- foldl (<|>) pfail (map string infixes)
     eatSpace
     cmd <- parseCmd
     return $ Infix ni infixWord cmd ) <++ parseNonInfix
+
+liftInfix :: Command -> Command
+liftInfix (Infix l word r) = case word of
+  "&&"  -> And l r
+  "||"  -> Or l r
+  ">>"  -> Seq l r
+  ">>=" -> Pipe l r
 
 parseNonInfix :: ReadP Command
 parseNonInfix = (do
@@ -107,15 +114,17 @@ parseArg = do
 parseWord :: ReadP String
 parseWord = (do
     word <- munch (/= ' ')
-    when (word `elem` infixes) pfail
+    when (unacceptable word) pfail
     return word ) <|> (do
-      str <- look
-      when ((not . null $ str) && (head str /= '(')) pfail
       word <- munch (\x -> not $ x `elem` " )")
-      when (word `elem` infixes) pfail
+      when (unacceptable word) pfail
       return word)
 
+unacceptable :: String -> Bool
+unacceptable s = (s `elem` unacceptableWords) || ((head s == '(') `xor` (last s == ')'))
 
+unacceptableWords :: [String]
+unacceptableWords = "" : infixes
 
 eatSpace :: ReadP ()
 eatSpace = many1 (char ' ') >> return ()
@@ -126,7 +135,5 @@ ignoreTrailingWhiteSpace p = do
   maybeEatSpace
   return x
 
-
 maybeEatSpace :: ReadP ()
 maybeEatSpace = many (char ' ') >> return ()
-

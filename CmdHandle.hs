@@ -27,7 +27,7 @@ contextHandleLine :: Context -> String -> IO CmdReturn
 contextHandleLine _ "" = return def
 contextHandleLine _ ('#':_) = return def
 contextHandleLine context input = case parseLine input of
-  Nothing -> putStrLn "syntax error" >> return def{succes=False} 
+  Nothing -> putStrLn ( "syntax error " ++ show input ) >> return def{succes=False} 
   Just line -> do
     when debug $ print line
     contextHandleLineData context line
