@@ -3,6 +3,8 @@ dist-*
 cabal-dev
 *.o
 *.hi
+*.o-boot
+*.hi-boot
 *.chi
 *.chs.h
 *.dyn_o
