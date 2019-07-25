@@ -22,9 +22,9 @@ Has
 Needs
   * common prelude functions
     * flip
+      * preluderc
     * forever
-    * ++
-    * arithmetic
+      * better pattern matching on arguments and then also prelude rc
   * Call to haskell
   * implement extract and forward
   * Configurable Prompt ideally parsed from Env variable

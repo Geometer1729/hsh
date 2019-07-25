@@ -13,7 +13,7 @@ data CmdReturn = CmdReturn {
    shellExit :: Bool
   ,succes    :: Bool
   ,awaits    :: [ProcessHandle]
-}
+} 
 
 instance Default CmdReturn where
   def = CmdReturn False True []
@@ -31,7 +31,7 @@ data Context = Context {
   ,sterr :: Maybe Handle
 }
 
-data Line = Extract String Command | Let [String] [String] | Plain Command deriving (Show)
+data Line = Extract String Command | Let [String] [String] | Plain Command deriving (Eq,Ord,Show)
 data  Command = Background Command 
               | ITE Command Command Command 
               | Or Command Command 
@@ -40,7 +40,7 @@ data  Command = Background Command
               | Pipe  Command Command 
               | Exec String [String] 
               | Infix Command String Command
-              deriving(Show)
+              deriving(Eq,Ord,Show)
 
 instance Default Context where
   def = Context Do Nothing Nothing Nothing

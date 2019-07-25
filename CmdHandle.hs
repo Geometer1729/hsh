@@ -18,6 +18,7 @@ import System.Posix.Directory
 import System.Posix.User
 import System.Process
 import Types
+import Export
 
 handleLine :: String -> IO CmdReturn
 handleLine = contextHandleLine def
@@ -84,9 +85,9 @@ doExec name args context = do
   r <- findExec name args context
   case r of
     Just x -> x
-    Nothing -> print "no such command could be found" >> return def{succes=False}
+    Nothing -> putStrLn ("no such command could be found " ++ name) >> return def{succes=False}
 
-findExec = seqAttempts [tryBuiltin,tryVar,tryExec]
+findExec = seqAttempts [tryBuiltin,tryVar,tryExec,tryHask]
 
 tryBuiltin :: String -> [String] -> Context -> IO (Maybe (IO CmdReturn))
 tryBuiltin cmd rawArgs context = do
@@ -126,7 +127,6 @@ tryExec path args context = do
   fromPath <- findExecutables path
   cwd <- getCurrentDirectory
   path' <- deTildify path
-  print (path,path')
   fromLocal <- findExecutablesInDirectories ["",cwd] path'
   let executable = listToMaybe (fromPath ++ fromLocal)
   case executable of
@@ -143,4 +143,6 @@ tryExec path args context = do
           return . Just . return $ CmdReturn False True [procHandle] 
     Nothing -> return Nothing
 
+tryHask :: String -> [String] -> Context -> IO (Maybe (IO CmdReturn))
+tryHask func args context = return $ tryExport (func:args) context
 

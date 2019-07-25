@@ -62,6 +62,9 @@ printTo (Just h) s = hPutStrLn h s
 
 exports :: Table 
 exports = flip execState (M.empty) $ do
-  exportAs "concat" ((++) :: String -> String -> String)
-  exportAs "add"    ((+) :: Int -> Int -> Int)
+  exportAs "(++)" ((++) :: String -> String -> String ) 
+  exportAs "(+)"  ((+)  :: Double -> Double -> Double)
+  exportAs "(-)"  ((-)  :: Double -> Double -> Double)
+  exportAs "(*)"  ((*)  :: Double -> Double -> Double)
+  exportAs "(/)"  ((/)  :: Double -> Double -> Double)
 
