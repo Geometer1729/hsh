@@ -27,7 +27,9 @@ Needs
   * Call to haskell
   * implement extract and forward
   * Configurable Prompt ideally parsed from Env variable
-  * Variable / ~ expansion in let statments
+  * ~ expansion in more contexts
+  * variable expansion
+  * command expansion ie $( echo hi ) in bash
   * better error messages
   * execute by absolute filePath or path from current working directory
 
