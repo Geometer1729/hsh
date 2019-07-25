@@ -71,6 +71,14 @@ contextHandleCmd context (Seq l r) = on (liftM2 (<>)) (contextHandleCmd context)
 
 type Attempt = String -> [String] -> Context -> IO (Maybe (IO CmdReturn))
 
+seqAttempts :: [Attempt] -> Attempt
+seqAttempts (x:xs) a b c = do
+  r1 <- x a b c
+  case r1 of
+    Just x -> return . Just $ x
+    Nothing -> seqAttempts xs a b c
+seqAttempts [] _ _ _ = return $ Nothing
+
 doExec :: String -> [String] -> Context -> IO CmdReturn
 doExec name args context = do
   r <- findExec name args context
@@ -78,7 +86,7 @@ doExec name args context = do
     Just x -> x
     Nothing -> print "no such command could be found" >> return def{succes=False}
 
-findExec = mconcat [tryBuiltin,tryVar,tryExec]
+findExec = seqAttempts [tryBuiltin,tryVar,tryExec]
 
 tryBuiltin :: String -> [String] -> Context -> IO (Maybe (IO CmdReturn))
 tryBuiltin cmd rawArgs context = do

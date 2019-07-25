@@ -4,8 +4,6 @@ import Text.ParserCombinators.ReadP hiding (many)
 import Control.Applicative 
 import Types
 
-
-
 parseLine :: String -> Maybe Line
 parseLine s = let parser = readP_to_S (lineParser)
                   parses = parser s
@@ -37,7 +35,21 @@ parseLet = do
 parsePlain = fmap Plain cmdParser
 
 cmdParser :: ReadP Command
-cmdParser = fmap applyInfix $ iteParse <++ parseInfix <++ bgParse <++ parseExec
+cmdParser = fmap applyInfix $ parenParse <|> iteParse <++ parseInfix <++ bgParse <++ parseExec
+
+parenParse :: ReadP Command
+parenParse = do
+  char '('
+  s <- cmdParser
+  char ')'
+  return s
+
+test :: ReadP String
+test = do
+  char '('
+  s <- string "ls"
+  char ')'
+  return s
 
 iteParse :: ReadP Command
 iteParse = do
@@ -58,7 +70,7 @@ bgParse = do
 
 parseInfix :: ReadP Command
 parseInfix = do
-  cmd1 <- bgParse <|> parseExec -- <++ prevents parsing && 
+  cmd1 <- parenParse <++ bgParse <|> parseExec -- <++ prevents parsing && 
   eatSpace
   infixStr <- foldl (<|>) pfail (map string [">>=","&&","||",">>"])
   eatSpace
@@ -73,7 +85,7 @@ parseExec = do
 
 parseWord :: ReadP String
 parseWord = do
-  result <- munch (/= ' ')
+  result <- munch (\x -> not $ x `elem` " )")
   if result `elem` ["","<-",">>=","&&","||","&"] then pfail else return result
 
 parseArgs :: ReadP [String]
