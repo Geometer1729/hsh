@@ -1,7 +1,9 @@
 {-# LANGUAGE LambdaCase #-}
+{-# LANGUAGE FlexibleInstances #-}
 module CmdHandle where
 
 import BuiltIns
+import ScriptUtil
 import Control.Monad
 import Data.Default
 import Data.Function
@@ -35,7 +37,7 @@ contextHandleLineData _ (Let left right) = letFunc left right
 contextHandleLineData c (Plain cmd) = contextHandleCmd c cmd
 
 contextHandleCmd :: Context -> Command -> IO CmdReturn
-contextHandleCmd context (Exec cmd args) = runVarOrExec cmd args context
+contextHandleCmd context (Exec cmd args) = doExec cmd args context
 contextHandleCmd context (Pipe cl cr) = do
   (readEnd,writeEnd) <- createPipe
   let lcontext = context{stout = Just writeEnd,wait = PassHandles}
@@ -65,26 +67,37 @@ contextHandleCmd context (And l r) = do
       return $ lret <> rret
 contextHandleCmd context (Seq l r) = on (liftM2 (<>)) (contextHandleCmd context) l r
 
+-- exec code
 
+type Attempt = String -> [String] -> Context -> IO (Maybe (IO CmdReturn))
 
-execOrBuiltin :: String -> [String] -> Context -> IO CmdReturn
-execOrBuiltin cmd rawArgs context = do
+doExec :: String -> [String] -> Context -> IO CmdReturn
+doExec name args context = do
+  r <- findExec name args context
+  case r of
+    Just x -> x
+    Nothing -> print "no such command could be found" >> return def{succes=False}
+
+findExec = mconcat [tryBuiltin,tryVar,tryExec]
+
+tryBuiltin :: String -> [String] -> Context -> IO (Maybe (IO CmdReturn))
+tryBuiltin cmd rawArgs context = do
   args' <- mapM deTildify rawArgs
   case (cmd,args') of
-    ("exit",_)       -> return def{shellExit=True}
-    ("cd",args)      -> fromSuc $ cd args 
-    ("print",args)   -> fromSuc $ printEnvVars args 
-    ("lineMap",args) -> lineMap args context
-    (".",args)       -> runFiles args
-    ("True",[])      -> true
-    ("False",[])     -> false
-    (cmd,args)       -> runExec cmd args context
+    ("exit",_)       -> return . Just $ return def{shellExit=True}
+    ("cd",args)      -> return . Just $ fromSuc $ cd args 
+    ("print",args)   -> return . Just $ fromSuc $ printEnvVars args 
+    ("lineMap",args) -> return . Just $ lineMap args context
+    (".",args)       -> return . Just $ runFiles args
+    ("True",[])      -> return . Just $ true
+    ("False",[])     -> return . Just $ false
+    _                -> return $ Nothing
 
 fromSuc :: IO Bool -> IO CmdReturn
 fromSuc = fmap (\s -> def{succes=s})
 
-runVarOrExec :: String -> [String] -> Context -> IO CmdReturn
-runVarOrExec path args context = lookupEnv path >>= \case
+tryVar :: String -> [String] -> Context -> IO (Maybe (IO CmdReturn))
+tryVar path args context = lookupEnv path >>= \case
   Just ('\\':string) -> let
     ws = words string
     vars = takeWhile (/= "->") ws
@@ -93,13 +106,14 @@ runVarOrExec path args context = lookupEnv path >>= \case
     extraArgs = drop (length vars) args
     output' = dosubs subs (output ++ unwords extraArgs)
     in do
-      contextHandleLine context output' 
+      return . Just $ contextHandleLine context output' 
   Just string  -> do
-    contextHandleLine context (string ++ " " ++ unwords args) 
-  Nothing -> execOrBuiltin path args context
-  
-runExec :: String -> [String] -> Context -> IO CmdReturn
-runExec path args context = do
+    return . Just $ contextHandleLine context (string ++ " " ++ unwords args) 
+  Nothing -> return Nothing
+
+
+tryExec :: String -> [String] -> Context -> IO (Maybe (IO CmdReturn))
+tryExec path args context = do
   env <- getEnvironment
   executable <- findExecutable path
   if isJust executable then do
@@ -108,42 +122,11 @@ runExec path args context = do
     case wait context of
       Do -> do
         suc <- fmap (== ExitSuccess) $ waitForProcess procHandle 
-        return $ CmdReturn False suc [] 
+        return . Just . return $ CmdReturn False suc [] 
       Dont -> do
-        return $ CmdReturn False True [] 
+        return . Just . return $ CmdReturn False True [] 
       PassHandles -> do
-        return $ CmdReturn False True [procHandle] 
+        return . Just . return $ CmdReturn False True [procHandle] 
   else do
-    putStrLn (path ++ " not found")
-    return $ CmdReturn False False [] 
+    return Nothing
 
-
---script Utils
-
-runFiles :: [String] -> IO CmdReturn
-runFiles [] = return def
-runFiles (x:xs) = do
-  xRet <- runFile False x
-  if shellExit xRet then do
-    xsRet <- runFiles xs
-    return $ xRet <> xsRet
-  else do
-    return def{shellExit = True}
-
-runFile :: Bool -> String -> IO CmdReturn
-runFile silent path = do
- valid <- doesFileExist path
- if valid then do
-   contents <- readFile path
-   let ls = lines contents
-   runLines ls
-  else when (not silent) (putStrLn "file not found") >> def
-
-runLines :: [String] -> IO CmdReturn
-runLines [] = return def
-runLines (x:xs) = do
-  l <- handleLine x
-  if (not . shellExit $ l) then do
-    runLines xs
-  else do
-    return l

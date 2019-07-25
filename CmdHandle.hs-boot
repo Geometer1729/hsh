@@ -1,4 +1,4 @@
-module CmdHandle (contextHandleCmd,contextHandleLine) where
+module CmdHandle (contextHandleCmd,contextHandleLine,handleLine)where
 
 import Types
 import Control.Monad
@@ -17,3 +17,4 @@ import SubUtils
 
 contextHandleCmd  :: Context -> Command -> IO CmdReturn
 contextHandleLine :: Context -> String  -> IO CmdReturn
+handleLine :: String -> IO CmdReturn
