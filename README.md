@@ -28,13 +28,10 @@ Needs
   * Call to haskell
   * implement extract and forward
   * Configurable Prompt ideally parsed from Env variable
-  * ~ expansion in more contexts
   * variable expansion
   * command expansion ie $( echo hi ) in bash
   * better error messages
   * " and \\ support to allow literal strings arguments with spaces etc
-  * ctrl-c often crashes the shell
-  * making hsh my primary shell somehow breaks some but not all of the run commands on my status bar
   * Pipe stdout stderr seperately
 
 Installation
@@ -49,4 +46,6 @@ Installation
   * It will complain if you don't add /bin/hsh to the end of /etc/shells . I'm not sure if this matters.
 
 Bugs
+  * ctrl-c often crashes the shell
   * Probably a bunch I don't know about, if you find one please report it
+  * ~ expansion sometimes doesn't happend but should
