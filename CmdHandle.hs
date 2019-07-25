@@ -1,9 +1,9 @@
 {-# LANGUAGE LambdaCase #-}
-{-# LANGUAGE FlexibleInstances #-}
 module CmdHandle where
 
-import BuiltIns
 import ScriptUtil
+import BuiltIns
+
 import Control.Monad
 import Data.Default
 import Data.Function
@@ -67,7 +67,7 @@ contextHandleCmd context (And l r) = do
       return $ lret <> rret
 contextHandleCmd context (Seq l r) = on (liftM2 (<>)) (contextHandleCmd context) l r
 
--- exec code
+-- exec
 
 type Attempt = String -> [String] -> Context -> IO (Maybe (IO CmdReturn))
 
@@ -123,18 +123,24 @@ tryVar path args context = lookupEnv path >>= \case
 tryExec :: String -> [String] -> Context -> IO (Maybe (IO CmdReturn))
 tryExec path args context = do
   env <- getEnvironment
-  executable <- findExecutable path
-  if isJust executable then do
-    procHandle <- runProcess path args Nothing (Just env) (stin context) (stout context) (sterr context)
-    -- if not awaiting the return code should be ignored
-    case wait context of
-      Do -> do
-        suc <- fmap (== ExitSuccess) $ waitForProcess procHandle 
-        return . Just . return $ CmdReturn False suc [] 
-      Dont -> do
-        return . Just . return $ CmdReturn False True [] 
-      PassHandles -> do
-        return . Just . return $ CmdReturn False True [procHandle] 
-  else do
-    return Nothing
+  fromPath <- findExecutables path
+  cwd <- getCurrentDirectory
+  path' <- deTildify path
+  print (path,path')
+  fromLocal <- findExecutablesInDirectories ["",cwd] path'
+  let executable = listToMaybe (fromPath ++ fromLocal)
+  case executable of
+    Just location -> do
+      procHandle <- runProcess location args Nothing (Just env) (stin context) (stout context) (sterr context)
+      -- if not awaiting the return code should be ignored
+      case wait context of
+        Do -> do
+          suc <- fmap (== ExitSuccess) $ waitForProcess procHandle 
+          return . Just . return $ CmdReturn False suc [] 
+        Dont -> do
+          return . Just . return $ CmdReturn False True [] 
+        PassHandles -> do
+          return . Just . return $ CmdReturn False True [procHandle] 
+    Nothing -> return Nothing
+
 

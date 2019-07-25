@@ -1,3 +1,3 @@
 install: 
-	ghc -dynamic hsh
+	ghc -O2 -dynamic hsh
 	sudo cp hsh /bin

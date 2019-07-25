@@ -17,6 +17,7 @@ Has
     * False
   * let
     * supports lambda functions and function definitions
+  * execute by absolute filePath or path from current working directory
 
 Needs
   * common prelude functions
@@ -31,7 +32,10 @@ Needs
   * variable expansion
   * command expansion ie $( echo hi ) in bash
   * better error messages
-  * execute by absolute filePath or path from current working directory
+  * " and \\ support to allow literal strings arguments with spaces etc
+  * ctrl-c often crashes the shell
+  * making hsh my primary shell somehow breaks some but not all of the run commands on my status bar
+  * Pipe stdout stderr seperately
 
 Installation
   * Several Cabal Packages are required to compile

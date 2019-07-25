@@ -1,10 +1,11 @@
 module ScriptUtil where
 
-import {-# Source #-} CmdHandle
 import Types
 import Data.Default
 import System.Directory
 import Control.Monad
+
+import {-# Source #-} CmdHandle
 
 runFiles :: [String] -> IO CmdReturn
 runFiles [] = return def
