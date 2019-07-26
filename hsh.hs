@@ -16,8 +16,7 @@ main :: IO()
 main = do
   args <- getArgs
   runFiles args
-  completerInit
-  if null args then hshrc >> loop else return () 
+  when (null args) (completerInit >> hshrc >> loop) 
 
 loop :: IO ()
 loop = do

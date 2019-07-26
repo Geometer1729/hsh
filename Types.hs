@@ -2,6 +2,7 @@ module Types where
 
 import Data.Default
 import System.Process
+import Data.Semigroup
 import System.IO
 
 debug :: Bool
