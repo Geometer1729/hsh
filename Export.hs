@@ -1,7 +1,7 @@
 {-# LANGUAGE FlexibleInstances #-}
 {-# LANGUAGE IncoherentInstances  #-}
 {-# LANGUAGE UndecidableInstances #-}
-
+{-# LANGUAGE MonoLocalBinds #-}
 module Export where
 
 import Control.Monad.State
