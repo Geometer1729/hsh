@@ -8,17 +8,14 @@ import Control.Monad
 import Data.Default
 import Data.Function
 import Data.Maybe
-import Parse
 import SubUtils
 import System.Directory
 import System.Environment
 import System.Exit
-import System.IO
-import System.Posix.Directory
-import System.Posix.User
 import System.Process
 import Types
 import Export
+import Parse
 
 handleLine :: String -> IO CmdReturn
 handleLine = contextHandleLine def
@@ -67,6 +64,7 @@ contextHandleCmd context (And l r) = do
       rret <- contextHandleCmd context r
       return $ lret <> rret
 contextHandleCmd context (Seq l r) = on (liftM2 (<>)) (contextHandleCmd context) l r
+contextHandleCmd _ (Infix _ _ _) = error "unexpaned infix passed to context handle cmd"
 
 -- exec
 
@@ -76,7 +74,7 @@ seqAttempts :: [Attempt] -> Attempt
 seqAttempts (x:xs) a b c = do
   r1 <- x a b c
   case r1 of
-    Just x -> return . Just $ x
+    Just ret -> return . Just $ ret
     Nothing -> seqAttempts xs a b c
 seqAttempts [] _ _ _ = return $ Nothing
 
@@ -87,6 +85,7 @@ doExec name args context = do
     Just x -> x
     Nothing -> putStrLn ("no such command could be found " ++ name) >> return def{succes=False}
 
+findExec :: Attempt
 findExec = seqAttempts [tryBuiltin,tryVar,tryExec,tryHask]
 
 tryBuiltin :: String -> [String] -> Context -> IO (Maybe (IO CmdReturn))
@@ -120,18 +119,17 @@ tryVar path args context = lookupEnv path >>= \case
     return . Just $ contextHandleLine context (string ++ " " ++ unwords args) 
   Nothing -> return Nothing
 
-
 tryExec :: String -> [String] -> Context -> IO (Maybe (IO CmdReturn))
 tryExec path args context = do
-  env <- getEnvironment
+  localEnv <- getEnvironment
   fromPath <- findExecutables path
-  cwd <- getCurrentDirectory
+  localCwd <- getCurrentDirectory
   path' <- deTildify path
-  fromLocal <- findExecutablesInDirectories ["",cwd] path'
-  let executable = listToMaybe (fromPath ++ fromLocal)
-  case executable of
+  fromLocal <- findExecutablesInDirectories ["",localCwd] path'
+  let execName = listToMaybe (fromPath ++ fromLocal)
+  case execName of
     Just location -> do
-      procHandle <- runProcess location args Nothing (Just env) (stin context) (stout context) (sterr context)
+      procHandle <- runProcess location args Nothing (Just localEnv) (stin context) (stout context) (sterr context)
       -- if not awaiting the return code should be ignored
       case wait context of
         Do -> do

@@ -4,6 +4,7 @@ import Data.Default
 import System.Process
 import System.IO
 
+debug :: Bool
 debug = False
 -- not really a type but it's convenient if most things import this
 

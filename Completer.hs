@@ -8,6 +8,7 @@ import Data.Maybe
 import Data.List
 import SubUtils
 
+completerInit :: IO ()
 completerInit = do
   home <- lookupEnv "HOME"
   case home of 
@@ -30,10 +31,10 @@ completer word _ _ = do
   path <- deTildify word
   files <- filenameCompletionFunction path
   files' <- mapM tildify files
-  case files of
+  case files' of
     []     -> return Nothing
     (x:[]) -> return $ Just (x,[])
-    xs     -> return Nothing
+    _     -> return Nothing
 
 executables :: IO [String]
 executables = do
@@ -54,6 +55,7 @@ executablesIn path = do
 isExecutable :: String -> IO Bool
 isExecutable string = fmap executable $ getPermissions string
 
+splitPath,splitSlash :: String -> [String]
 splitPath = splitOn ':'
 splitSlash = splitOn '/'
 
@@ -61,7 +63,7 @@ splitOn :: Char -> String -> [String]
 splitOn _ "" = []
 splitOn c s = let (x,xs) = break (== c) s in case xs of
   "" -> [x]
-  s -> x: (splitOn c . tail $ s)
+  w -> x: (splitOn c . tail $ w)
 
 isPrefix :: (Eq a) => [a] -> [a] -> Bool
 isPrefix a b = and $ zipWith (==) a b

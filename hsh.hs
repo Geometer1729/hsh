@@ -1,9 +1,7 @@
 {-# LANGUAGE LambdaCase #-}
 import CmdHandle
 import Completer
-import Parse
 import System.Environment
-import System.IO
 import System.Posix.User
 import System.Posix.Directory
 import System.Console.Readline hiding( getPrompt )
@@ -14,13 +12,14 @@ import SubUtils
 import ScriptUtil
 
 
+main :: IO()
 main = do
   args <- getArgs
   runFiles args
   completerInit
   if null args then hshrc >> loop else return () 
 
-
+loop :: IO ()
 loop = do
   prompt <- getPrompt
   input <- readline prompt
@@ -51,4 +50,3 @@ hshrc = do
   case home of
     Nothing -> return ()
     Just path -> runFile True (path ++ "/.hshrc") >> return ()
-

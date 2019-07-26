@@ -1,7 +1,6 @@
 {-# LANGUAGE LambdaCase #-}
 module BuiltIns where
 
-import Control.Monad
 import Data.Default
 import System.Directory
 import System.Environment
@@ -24,7 +23,7 @@ cd (dir:[]) = do
     else case pwd of 
       Just wd -> tryCd (wd ++ "/" ++ dir)
       Nothing -> putStrLn "PWD not set and relative path given" >> return False
-cd (a:b:_) = putStrLn "too many args to cd" >> return False
+cd (_:_:_) = putStrLn "too many args to cd" >> return False
 
 tryCd :: String -> IO Bool
 tryCd path = do
@@ -44,8 +43,9 @@ tryCd path = do
 letFunc :: [String] -> [String] -> IO CmdReturn
 letFunc left right = let
     value = case left of
-      [var] -> unwords right
-      (func:args) -> "\\" ++ (unwords . tail $ left) ++ " -> " ++ unwords right
+      [] -> error "let func called on []"
+      [_] -> unwords right
+      _ -> "\\" ++ (unwords . tail $ left) ++ " -> " ++ unwords right
     in setEnv (head left) value >> return def
 
 printEnvVars :: [String] -> IO Bool
@@ -59,6 +59,8 @@ printEnvVar var = do
     Nothing -> putStrLn ("variable " ++ var ++ " is not set") >> return False
 
 lineMap :: [String] -> Context -> IO CmdReturn
+lineMap []      _       = lineMapArgFail
+lineMap (_:[])  _       = lineMapArgFail
 lineMap (f:cmd) context = do
   (readEnd,writeEnd) <- createPipe
   cmdRet <- contextHandleLine context{stout = Just writeEnd,wait=PassHandles} (unwords cmd)
@@ -67,6 +69,10 @@ lineMap (f:cmd) context = do
   let cmdRet' = cmdRet <> def{succes=and . map  (== ExitSuccess) $ awaitSuc}
   return $ mconcat (cmdRet':lineRets)
 
+lineMapArgFail :: IO CmdReturn
+lineMapArgFail = do
+  putStrLn "lineMap requires atleast 2 arguments"
+  return $ def{succes=False}
 
 lineMapLoop :: String -> Handle -> Context -> IO [CmdReturn]
 lineMapLoop f h context = do

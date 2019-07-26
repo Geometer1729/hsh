@@ -42,6 +42,7 @@ tryTable :: Table -> [String] -> Maybe (IO (Maybe String))
 tryTable t (x:xs) = case M.lookup x t of
   Nothing -> Nothing
   Just f -> Just $ f xs 
+tryTable _ [] = Nothing
 
 findExport :: [String] -> Maybe (IO (Maybe String))
 findExport = tryTable exports

@@ -41,6 +41,7 @@ parseLet = do
   right <- parseArgs
   return $ Let left right
 
+parsePlain :: ReadP Line
 parsePlain = fmap Plain parseCmd
 
 {-
@@ -71,6 +72,8 @@ liftInfix (Infix l word r) = case word of
   "||"  -> Or l r
   ">>"  -> Seq l r
   ">>=" -> Pipe l r
+  _ -> error "unsupoorted infix string givent to liftInfix in Parse.hs"
+liftInfix _ = error "liftInfix called on non infix in Parse.hs"
 
 parseNonInfix :: ReadP Command
 parseNonInfix = (do
