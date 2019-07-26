@@ -2,6 +2,7 @@
 import CmdHandle
 import Completer
 import System.Environment
+import System.Exit
 import System.Posix.User
 import System.Posix.Directory
 import System.Console.Readline hiding( getPrompt )
@@ -15,8 +16,12 @@ import ScriptUtil
 main :: IO()
 main = do
   args <- getArgs
-  runFiles args
-  when (null args) (completerInit >> hshrc >> loop) 
+  if (null args) then
+    when (null args) (completerInit >> hshrc >> loop) 
+  else do
+    fileRet <- runFiles args
+    if succes fileRet then exitSuccess else exitFailure
+
 
 loop :: IO ()
 loop = do
