@@ -20,30 +20,28 @@ Has
   * execute by absolute filePath or path from current working directory
 
 Needs
+	* Ctrl-c Ctrl-d support
+	* file globing
+  * " and \\ support to allow literal strings arguments with spaces etc
+  * Pipe stdout stderr seperately
   * common prelude functions
     * flip
       * preluderc
     * forever
       * better pattern matching on arguments and then also prelude rc
+	* infix function support
   * Call to haskell
-  * implement extract and forward
-  * Configurable Prompt ideally parsed from Env variable
+  * implement extract 
   * variable expansion
   * command expansion ie $( echo hi ) in bash
   * better error messages
-  * " and \\ support to allow literal strings arguments with spaces etc
-  * Pipe stdout stderr seperately
+  * Configurable Prompt ideally parsed from Env variable
 
 Installation
-  * Several Cabal Packages are required to compile
-    * readline
-    * maybe 1 or 2 others I forget which
-  * Then just run make.
-    * If there are erros it probably means you don't have a cabal package I forgot I installed.
-    * The error should look like import ______ no such something, typically this can be resolved by searching the import in hackage or hoogle and installing the cabal package.
-    * Pleas tell me what the error is and if you fix it what package you needed to fix it was. 
-  * if runing hsh works and you are brave enough chsh -s /bin/hsh will make it your default shell.
-  * It will complain if you don't add /bin/hsh to the end of /etc/shells . I'm not sure if this matters.
+  * install gnureadline-devel
+	* cabal install readline
+	* make 
+	If anything in there doesn't work please let me know.
 
 Bugs
   * ctrl-c often crashes the shell
