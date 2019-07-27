@@ -126,10 +126,11 @@ tryExec path args context = do
   localCwd <- getCurrentDirectory
   path' <- deTildify path
   fromLocal <- findExecutablesInDirectories ["",localCwd] path'
+  args' <- mapM deTildify args
   let execName = listToMaybe (fromPath ++ fromLocal)
   case execName of
     Just location -> do
-      procHandle <- runProcess location args Nothing (Just localEnv) (stin context) (stout context) (sterr context)
+      procHandle <- runProcess location args' Nothing (Just localEnv) (stin context) (stout context) (sterr context)
       -- if not awaiting the return code should be ignored
       case wait context of
         Do -> do

@@ -6,7 +6,7 @@ import Data.Semigroup
 import System.IO
 
 debug :: Bool
-debug = False
+debug = True
 -- not really a type but it's convenient if most things import this
 
 data WaitPlan = Dont | Do | PassHandles

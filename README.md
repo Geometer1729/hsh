@@ -18,9 +18,9 @@ Has
   * let
     * supports lambda functions and function definitions
   * execute by absolute filePath or path from current working directory
+	* Ctrl-c Ctrl-d support
 
 Needs
-	* Ctrl-c Ctrl-d support
 	* file globing
   * " and \\ support to allow literal strings arguments with spaces etc
   * Pipe stdout stderr seperately
@@ -38,12 +38,10 @@ Needs
   * Configurable Prompt ideally parsed from Env variable
 
 Installation
-  * install gnureadline-devel
-	* cabal install readline
+  * git clone https://github.com/Geometer1729/hsh.git
+	* cd hsh
 	* make 
 	If anything in there doesn't work please let me know.
 
 Bugs
-  * ctrl-c often crashes the shell
   * Probably a bunch I don't know about, if you find one please report it
-  * ~ expansion sometimes doesn't happend but should

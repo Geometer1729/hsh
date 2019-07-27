@@ -1,6 +1,6 @@
 module Completer where
 
-import System.Console.Readline
+import System.Console.Haskeline
 import System.Directory
 import System.Environment
 import Control.Monad
@@ -8,33 +8,51 @@ import Data.Maybe
 import Data.List
 import SubUtils
 
-completerInit :: IO ()
-completerInit = do
-  home <- lookupEnv "HOME"
-  case home of 
-    Nothing -> return ()
-    Just path -> do
-      let inputrc = path ++ "/.inputrc"
-      exists <- doesFileExist inputrc
-      when exists $ readInitFile inputrc 
-  setAttemptedCompletionFunction (Just completer)
+readLine :: String -> IO (Maybe String)
+readLine prompt = runInputT settings (handle (\Interrupt -> lineIn) $ withInterrupt $ lineIn)
+  where
+    lineIn :: InputT IO (Maybe String)
+    lineIn = getInputLine prompt
 
-completer :: String -> Int -> Int -> IO (Maybe (String,[String]))
-completer word 0 _ = do
+settings = setComplete comp defaultSettings
+
+comp :: CompletionFunc IO
+comp = completeWordWithPrev Nothing " " completer
+
+completer :: String -> String -> IO [Completion]
+completer prior word = case compType prior of
+    Exec -> compExec word
+    File -> compFile word
+
+data CompType = Exec | File
+
+compType :: String -> CompType
+compType "" = Exec
+compType _  = File
+
+simpleComp :: String -> Completion
+simpleComp s = Completion s "" True
+
+compExec :: String -> IO [Completion]
+compExec word = do
   execs <- executables
-  let valid = filter (isPrefix word) execs
-  case valid of
-    []     -> return Nothing
-    (x:[]) -> return (Just (x,[]))
-    xs     -> return (Just (word,xs))
-completer word _ _ = do
-  path <- deTildify word
-  files <- filenameCompletionFunction path
-  files' <- mapM tildify files
-  case files' of
-    []     -> return Nothing
-    (x:[]) -> return $ Just (x,[])
-    _     -> return Nothing
+  let opts = filter (isPrefix word) execs
+  return $ map simpleComp opts
+
+compFile :: String -> IO [Completion]
+compFile w = do
+  w' <- deTildify w
+  cs <- listFiles w'
+  tildifyComps cs
+
+tildifyComps :: [Completion] -> IO [Completion]
+tildifyComps = mapM liftTildify
+
+liftTildify :: Completion -> IO Completion
+liftTildify c = do
+  let r = replacement c
+  r' <- tildify r
+  return c{replacement=r'}
 
 executables :: IO [String]
 executables = do
@@ -66,4 +84,10 @@ splitOn c s = let (x,xs) = break (== c) s in case xs of
   w -> x: (splitOn c . tail $ w)
 
 isPrefix :: (Eq a) => [a] -> [a] -> Bool
-isPrefix a b = and $ zipWith (==) a b
+isPrefix (x:xs) (y:ys) = (x == y) && isPrefix xs ys
+isPrefix [] _ = True
+isPrefix _ [] = False
+
+
+
+
