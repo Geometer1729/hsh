@@ -79,8 +79,10 @@ seqAttempts (x:xs) a b c = do
 seqAttempts [] _ _ _ = return $ Nothing
 
 doExec :: String -> [String] -> Context -> IO CmdReturn
-doExec name args context = do
-  r <- findExec name args context
+doExec name args0 context = do
+  args1 <- mapM deTildify args0
+  args2 <- fmap concat $ mapM glob args1
+  r <- findExec name args2 context
   case r of
     Just x -> x
     Nothing -> putStrLn ("no such command could be found " ++ name) >> return def{succes=False}
@@ -89,9 +91,7 @@ findExec :: Attempt
 findExec = seqAttempts [tryBuiltin,tryVar,tryExec,tryHask]
 
 tryBuiltin :: String -> [String] -> Context -> IO (Maybe (IO CmdReturn))
-tryBuiltin cmd rawArgs context = do
-  args' <- mapM deTildify rawArgs
-  case (cmd,args') of
+tryBuiltin cmd rawArgs context = case (cmd,rawArgs) of
     ("exit",_)       -> return . Just $ return def{shellExit=True}
     ("cd",args)      -> return . Just $ fromSuc $ cd args 
     ("print",args)   -> return . Just $ fromSuc $ printEnvVars args 

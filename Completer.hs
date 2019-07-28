@@ -14,6 +14,7 @@ readLine prompt = runInputT settings (handle (\Interrupt -> lineIn) $ withInterr
     lineIn :: InputT IO (Maybe String)
     lineIn = getInputLine prompt
 
+settings :: Settings IO
 settings = setComplete comp defaultSettings
 
 comp :: CompletionFunc IO
@@ -72,22 +73,4 @@ executablesIn path = do
 
 isExecutable :: String -> IO Bool
 isExecutable string = fmap executable $ getPermissions string
-
-splitPath,splitSlash :: String -> [String]
-splitPath = splitOn ':'
-splitSlash = splitOn '/'
-
-splitOn :: Char -> String -> [String]
-splitOn _ "" = []
-splitOn c s = let (x,xs) = break (== c) s in case xs of
-  "" -> [x]
-  w -> x: (splitOn c . tail $ w)
-
-isPrefix :: (Eq a) => [a] -> [a] -> Bool
-isPrefix (x:xs) (y:ys) = (x == y) && isPrefix xs ys
-isPrefix [] _ = True
-isPrefix _ [] = False
-
-
-
 

@@ -36,6 +36,7 @@ Needs
   * command expansion ie $( echo hi ) in bash
   * better error messages
   * Configurable Prompt ideally parsed from Env variable
+	* fancy junk so cd .. works with simlinks 
 
 Installation
   * git clone https://github.com/Geometer1729/hsh.git
