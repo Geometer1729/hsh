@@ -39,10 +39,14 @@ Needs
   * Configurable Prompt ideally parsed from Env variable
 
 Installation
-  * git clone https://github.com/Geometer1729/hsh.git
-	* cd hsh
-	* make 
-	If anything in there doesn't work please let me know.
+
+git clone https://github.com/Geometer1729/hsh.git
+
+cd hsh
+
+make 
+
+If anything in there doesn't work please let me know.
 
 Bugs
   * Probably a bunch I don't know about, if you find one please report it
