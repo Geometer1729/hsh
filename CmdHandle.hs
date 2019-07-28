@@ -1,21 +1,21 @@
 {-# LANGUAGE LambdaCase #-}
 module CmdHandle where
 
-import ScriptUtil
 import BuiltIns
-
 import Control.Monad
 import Data.Default
 import Data.Function
 import Data.Maybe
+import Export
+import Parse
+import ScriptUtil
 import SubUtils
 import System.Directory
 import System.Environment
 import System.Exit
+import System.IO
 import System.Process
 import Types
-import Export
-import Parse
 
 handleLine :: String -> IO CmdReturn
 handleLine = contextHandleLine def
@@ -30,7 +30,10 @@ contextHandleLine context input = case parseLine input of
     contextHandleLineData context line
 
 contextHandleLineData :: Context -> Line -> IO CmdReturn
-contextHandleLineData _ (Extract var cmd) = undefined
+contextHandleLineData _ (Extract var cmd) = do
+  (ret,val) <- eval (Plain cmd)
+  setEnv var (unwords val)
+  return ret
 contextHandleLineData _ (Let left right) = letFunc left right
 contextHandleLineData c (Plain cmd) = contextHandleCmd c cmd
 
@@ -42,11 +45,11 @@ contextHandleCmd context (Pipe cl cr) = do
   let rcontext = context{stin  = Just readEnd ,wait = PassHandles}
   lret <- contextHandleCmd lcontext cl
   rret <- contextHandleCmd rcontext cr
-  let handles = awaits lret ++ awaits rret
   case wait context of
     Do -> do
-      awaitSucs <- mapM waitForProcess handles
-      return $ lret <> rret <> def{succes = and . map (== ExitSuccess) $ awaitSucs}
+      lret' <- withWaits lret
+      rret' <- withWaits rret
+      return $ lret' <> rret'
     Dont -> return $ (lret <> rret){awaits = [] }
     PassHandles -> return $ lret <> rret
 contextHandleCmd context (Background cmd) = contextHandleCmd  context{wait=Dont} cmd
@@ -79,14 +82,32 @@ seqAttempts (x:xs) a b c = do
 seqAttempts [] _ _ _ = return $ Nothing
 
 doExec :: String -> [String] -> Context -> IO CmdReturn
-doExec name args0 context = do
-  args1 <- mapM deTildify args0
-  args2 <- fmap concat $ mapM glob args1
-  r <- findExec name args2 context
-  case r of
-    Just x -> x
-    Nothing -> putStrLn ("no such command could be found " ++ name) >> return def{succes=False}
+doExec name args context = do
+  (rets,args') <- fmap unzip $ mapM expandArg args
+  let ret = mconcat rets
+  if succes ret 
+    then do
+      r <- findExec name (concat args') context
+      case r of
+        Just c -> do
+          retc <- c
+          return $ ret <> retc
+        Nothing -> putStrLn ("no such command could be found " ++ name) >> return def{succes=False}
+    else do
+      return $ ret
 
+expandArg :: String -> IO (CmdReturn,[String])
+expandArg w@('`' :xs) = if last xs == '`'  then do
+  let ml = parseLine $ init xs
+  case ml of
+    Nothing -> return (def{succes=False},[]) -- this needs to be better
+    Just l -> eval l
+  else return (def,[w])
+expandArg w@('"' :xs) = fmap ((,) def) $ if last xs == '"'  then return [init xs] else return [w]
+expandArg w@('\'':xs) = fmap ((,) def) $ if last xs == '\'' then return [init xs] else return [w]
+expandArg arg = fmap ((,) def) $ do
+  a1 <- deTildify arg
+  glob a1
 findExec :: Attempt
 findExec = seqAttempts [tryBuiltin,tryVar,tryExec,tryHask]
 
@@ -126,11 +147,10 @@ tryExec path args context = do
   localCwd <- getCurrentDirectory
   path' <- deTildify path
   fromLocal <- findExecutablesInDirectories ["",localCwd] path'
-  args' <- mapM deTildify args
   let execName = listToMaybe (fromPath ++ fromLocal)
   case execName of
     Just location -> do
-      procHandle <- runProcess location args' Nothing (Just localEnv) (stin context) (stout context) (sterr context)
+      procHandle <- runProcess location args Nothing (Just localEnv) (stin context) (stout context) (sterr context)
       -- if not awaiting the return code should be ignored
       case wait context of
         Do -> do
@@ -145,3 +165,21 @@ tryExec path args context = do
 tryHask :: String -> [String] -> Context -> IO (Maybe (IO CmdReturn))
 tryHask func args context = return $ tryExport (func:args) context
 
+eval :: Line -> IO (CmdReturn,[String])
+eval w = do
+  (readEnd,writeEnd) <- createPipe
+  ret <- contextHandleLineData def{stout = Just writeEnd,wait = PassHandles} w
+  out <- hGetContents readEnd 
+  ret' <- withWaits ret
+  return (ret',concat . map words . lines $ out)
+
+withWaits :: CmdReturn -> IO CmdReturn 
+withWaits ret = do
+  s <- waitFor (awaits ret)
+  return $ ret <> def{succes=s}
+
+waitFor :: [ProcessHandle] -> IO Bool
+waitFor ps = fmap and $ mapM waitOne ps
+
+waitOne :: ProcessHandle -> IO Bool
+waitOne p = fmap (== ExitSuccess) $ waitForProcess p

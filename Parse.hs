@@ -116,13 +116,35 @@ parseArg = do
   parseWord
 
 parseWord :: ReadP String
-parseWord = (do
+parseWord = tic <++ quote1 <++ quote2  <++ ((do
     word <- munch (/= ' ')
     when (unacceptable word) pfail
     return word ) <|> (do
       word <- munch (\x -> not $ x `elem` " )")
       when (unacceptable word) pfail
-      return word)
+      return word))
+
+wraped :: Char -> ReadP String
+wraped c = do
+  char c
+  fmap (c:) (continue c)
+
+continue :: Char -> ReadP String
+continue c = do
+  n <- get
+  if n == c then return [c] else do
+    if n == '\\' then do
+      n2 <- get
+      rest <- continue c
+      return ([n,n2] ++ rest)
+    else do
+      fmap (n:) (continue c)
+
+    
+tic , quote1 , quote2 :: ReadP String
+tic    = wraped '`'
+quote1 = wraped '\''
+quote2 = wraped '"'
 
 unacceptable :: String -> Bool
 unacceptable s = (s `elem` unacceptableWords) || ((head s == '(') `xor` (last s == ')'))

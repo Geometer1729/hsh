@@ -19,24 +19,24 @@ Has
     * supports lambda functions and function definitions
   * execute by absolute filePath or path from current working directory
 	* Ctrl-c Ctrl-d support
-
-Needs
 	* file globing
   * " and \\ support to allow literal strings arguments with spaces etc
+	* backticks allow evaluating commands inside commands
+  * store output as var with <-, ie x <- ls
+
+Needs
   * Pipe stdout stderr seperately
+  * variable expansion
+  * better error messages
+	* fancy junk so cd .. works with simlinks 
+	* infix function support
   * common prelude functions
     * flip
       * preluderc
     * forever
       * better pattern matching on arguments and then also prelude rc
-	* infix function support
   * Call to haskell
-  * implement extract 
-  * variable expansion
-  * command expansion ie $( echo hi ) in bash
-  * better error messages
   * Configurable Prompt ideally parsed from Env variable
-	* fancy junk so cd .. works with simlinks 
 
 Installation
   * git clone https://github.com/Geometer1729/hsh.git

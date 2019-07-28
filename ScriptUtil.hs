@@ -11,7 +11,7 @@ runFiles :: [String] -> IO CmdReturn
 runFiles [] = return def
 runFiles (x:xs) = do
   xRet <- runFile False x
-  if shellExit xRet then do
+  if not $ shellExit xRet then do
     xsRet <- runFiles xs
     return $ xRet <> xsRet
   else do

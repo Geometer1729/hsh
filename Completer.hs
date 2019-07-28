@@ -9,7 +9,7 @@ import Data.List
 import SubUtils
 
 readLine :: String -> IO (Maybe String)
-readLine prompt = runInputT settings (handle (\Interrupt -> lineIn) $ withInterrupt $ lineIn)
+readLine prompt = runInputT settings (handleInterrupt lineIn $ withInterrupt $ lineIn)
   where
     lineIn :: InputT IO (Maybe String)
     lineIn = getInputLine prompt

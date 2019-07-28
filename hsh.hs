@@ -29,7 +29,7 @@ loop :: String -> InputT IO ()
 loop prompt = do
   line <- getInputLine prompt
   case line of
-    Nothing -> return () -- nothing is returned on EOF
+    Nothing -> return ()
     Just text -> do
       ret <- lift $ handleLine text
       when (not . shellExit $ ret) (loop prompt)
