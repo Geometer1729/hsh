@@ -26,8 +26,6 @@ Has
   * Pipe stdout stderr seperately or together
 
 Needs
-  * variable expansion
-  * better error messages
 	* fancy junk so cd .. works with simlinks 
 	* infix function support
   * common prelude functions
@@ -37,6 +35,7 @@ Needs
       * better pattern matching on arguments and then also prelude rc
   * Call to haskell
   * Configurable Prompt ideally parsed from Env variable
+  * better error messages
 
 Installation
 
@@ -46,7 +45,7 @@ cd hsh
 
 make 
 
-If anything in there doesn't work please let me know.
+if make doesn't work let me know
 
 Bugs
   * Probably a bunch I don't know about, if you find one please report it

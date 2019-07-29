@@ -16,6 +16,7 @@ import System.Exit
 import System.IO
 import System.Process
 import Types
+import Data.Char
 
 handleLine :: String -> IO CmdReturn
 handleLine = contextHandleLine def
@@ -107,11 +108,21 @@ expandArg w@('`' :xs) = if last xs == '`'  then do
   else return (def,[w])
 expandArg w@('"' :xs) = fmap ((,) def) $ if last xs == '"'  then return [init xs] else return [w]
 expandArg w@('\'':xs) = fmap ((,) def) $ if last xs == '\'' then return [init xs] else return [w]
-expandArg arg = fmap ((,) def) $ do
-  a1 <- deTildify arg
-  glob a1
+expandArg arg = fmap ((,) def) $ (varExpand >=> deTildify >=> glob) arg
+
 findExec :: Attempt
 findExec = seqAttempts [tryBuiltin,tryVar,tryExec,tryHask]
+
+varExpand :: String -> IO String
+varExpand ('$':w) = let
+  (var,rest) = break (not . isAlpha) w
+  in do
+    mval <- lookupEnv var
+    case mval of
+      Just val -> fmap (val ++) $ varExpand rest
+      Nothing -> varExpand rest
+varExpand (c:w) = fmap (c:) $ varExpand w
+varExpand [] = return []
 
 tryBuiltin :: String -> [String] -> Context -> IO (Maybe (IO CmdReturn))
 tryBuiltin cmd rawArgs context = case (cmd,rawArgs) of
