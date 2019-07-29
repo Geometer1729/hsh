@@ -30,6 +30,7 @@ Needs
   * common prelude functions
     * forever
       * better pattern matching on arguments and then also prelude rc
+  * smarter tab completions
 	* fancy junk so cd .. works with simlinks 
   * Call to haskell
   * Configurable Prompt ideally parsed from Env variable

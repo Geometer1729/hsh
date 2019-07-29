@@ -8,6 +8,8 @@ import Control.Monad
 import Data.List
 import Data.Bits
 
+import Debug.Trace
+
 parseLine :: String -> Maybe Line
 parseLine s = let 
   parser = readP_to_S (lineParser)
@@ -102,7 +104,7 @@ parseSimple = (do
 
 parseExec :: ReadP Command
 parseExec =  parseParen <++ do
-  name <- parseWord
+  name <- parseHead
   args <- parseArgs
   return $ Exec name args
 
@@ -111,12 +113,14 @@ parseParen = do
   char '('
   str <- look
   when (singleWordInParen str) pfail
+  when (str == "" || head str == '\\') pfail
+  _ <- fmap (trace "this ran") look
   cmd <- parseCmd
   char ')'
   return cmd
 
 singleWordInParen :: String -> Bool
-singleWordInParen w = let tilParen = fst . break (/= ')') $ w in not $ ' ' `elem` tilParen
+singleWordInParen w = let tilParen = fst . break (== ')') $ w in not $ ' ' `elem` tilParen
 
 parseArgs :: ReadP [String]
 parseArgs = many parseArg
@@ -136,10 +140,16 @@ parseWord = tic <++ quote1 <++ quote2  <++ ((do
       when (unacceptable word) pfail
       return word))
 
-wraped :: Char -> ReadP String
-wraped c = do
-  char c
-  fmap (c:) (continue c)
+wraped :: String -> Char -> ReadP String
+wraped cl cr = do
+  string cl
+  fmap (cl ++) (continue cr)
+
+wrapedSimple :: Char -> ReadP String
+wrapedSimple c = wraped [c] c
+
+parseHead :: ReadP String
+parseHead = wraped "(\\" ')' <++ parseWord
 
 continue :: Char -> ReadP String
 continue c = do
@@ -154,9 +164,9 @@ continue c = do
 
     
 tic , quote1 , quote2 :: ReadP String
-tic    = wraped '`'
-quote1 = wraped '\''
-quote2 = wraped '"'
+tic    = wrapedSimple '`'
+quote1 = wrapedSimple '\''
+quote2 = wrapedSimple '"'
 
 unacceptable :: String -> Bool
 unacceptable s = (s `elem` unacceptableWords) || ((head s == '(') `xor` (last s == ')'))
