@@ -1,9 +1,11 @@
-install: build placeBin
+install: build placeFiles
 
-udate: updateSrc clean install
+udate: updateSrc install
 
-placeBin:
+placeFiles:
 	sudo cp hsh /bin
+	sudo mkdir -p /usr/share/hsh
+	sudo cp preluderc /usr/share/hsh
 
 build:
 	ghc -O2 -dynamic -Wall -j8 hsh

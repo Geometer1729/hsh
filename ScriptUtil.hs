@@ -8,14 +8,7 @@ import Control.Monad
 import {-# Source #-} CmdHandle
 
 runFiles :: [String] -> IO CmdReturn
-runFiles [] = return def
-runFiles (x:xs) = do
-  xRet <- runFile False x
-  if not $ shellExit xRet then do
-    xsRet <- runFiles xs
-    return $ xRet <> xsRet
-  else do
-    return def{shellExit = True}
+runFiles = fmap mconcat . mapM (runFile True) 
 
 runFile :: Bool -> String -> IO CmdReturn
 runFile silent path = do

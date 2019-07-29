@@ -15,7 +15,7 @@ main :: IO ()
 main = do
   args <- getArgs
   if (null args) then
-    when (null args) (hshrc >> hsh) 
+    when (null args) (preluderc >> hshrc >> hsh) 
   else do
     fileRet <- runFiles args
     if succes fileRet then exitSuccess else exitFailure
@@ -47,6 +47,9 @@ getPrompt = do
 
 color :: Int -> String -> String
 color n s = "\ESC[01;" ++ show n ++ "m" ++ s ++ "\ESC[0m"
+
+preluderc :: IO ()
+preluderc = runFile True "/usr/share/hsh/preluderc" >> return ()
 
 hshrc :: IO ()
 hshrc = do

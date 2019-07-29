@@ -37,9 +37,11 @@ parseExtract = do
 parseLet :: ReadP Line
 parseLet = do
   string "let"
-  left <- parseArgs
-  string " ="
-  right <- parseArgs
+  left <- parseArgsLet
+  eatSpace
+  string "="
+  right <- parseArgsLet
+  maybeEatSpace
   return $ Let left right
 
 parsePlain :: ReadP Line
@@ -92,9 +94,10 @@ parseNonInfix = (do
 parseSimple :: ReadP Command 
 parseSimple = (do
     cmd <- parseExec
-    string " &"
+    eatSpace
+    char  '&'
     rest <- look
-    when ( (null rest) || (head rest == '&') ) pfail
+    when ( (not $ null rest) && (head rest == '&') ) pfail
     return $ Background cmd) <++ parseExec
 
 parseExec :: ReadP Command
@@ -106,17 +109,23 @@ parseExec =  parseParen <++ do
 parseParen :: ReadP Command
 parseParen = do
   char '('
+  str <- look
+  when (singleWordInParen str) pfail
   cmd <- parseCmd
   char ')'
   return cmd
+
+singleWordInParen :: String -> Bool
+singleWordInParen w = let tilParen = fst . break (/= ')') $ w in not $ ' ' `elem` tilParen
 
 parseArgs :: ReadP [String]
 parseArgs = many parseArg
 
 parseArg :: ReadP String
-parseArg = do
-  char ' '
-  parseWord
+parseArg = (eatSpace >> parseWord)
+
+parseArgsLet :: ReadP [String]
+parseArgsLet = many (eatSpace >> munch1 (/= ' '))
 
 parseWord :: ReadP String
 parseWord = tic <++ quote1 <++ quote2  <++ ((do
