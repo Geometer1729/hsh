@@ -56,7 +56,7 @@ parsePlain = fmap Plain parseCmd
     -}
 
 infixes :: [String]
-infixes = ["||","&&",">>",">>="]
+infixes = ["||","&&",">>",">>=","1>>=","2>>=","1&2>>="]
 
 parseCmd :: ReadP Command
 parseCmd = fmap liftInfix (do
@@ -72,7 +72,10 @@ liftInfix (Infix l word r) = case word of
   "&&"  -> And l r
   "||"  -> Or l r
   ">>"  -> Seq l r
-  ">>=" -> Pipe l r
+  ">>=" -> Pipe True False l r
+  "1>>=" -> Pipe True False l r
+  "2>>=" -> Pipe False True l r
+  "1&2>>=" -> Pipe True True l r
   _ -> error "unsupoorted infix string givent to liftInfix in Parse.hs"
 liftInfix _ = error "liftInfix called on non infix in Parse.hs"
 

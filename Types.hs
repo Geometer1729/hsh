@@ -39,7 +39,7 @@ data  Command = Background Command
               | Or Command Command 
               | And Command Command 
               | Seq Command Command 
-              | Pipe  Command Command 
+              | Pipe Bool Bool Command Command 
               | Exec String [String] 
               | Infix Command String Command
               deriving(Eq,Ord,Show)

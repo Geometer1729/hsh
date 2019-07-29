@@ -23,9 +23,9 @@ Has
   * " and \\ support to allow literal strings arguments with spaces etc
 	* backticks allow evaluating commands inside commands
   * store output as var with <-, ie x <- ls
+  * Pipe stdout stderr seperately or together
 
 Needs
-  * Pipe stdout stderr seperately
   * variable expansion
   * better error messages
 	* fancy junk so cd .. works with simlinks 

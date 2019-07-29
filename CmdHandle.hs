@@ -39,9 +39,11 @@ contextHandleLineData c (Plain cmd) = contextHandleCmd c cmd
 
 contextHandleCmd :: Context -> Command -> IO CmdReturn
 contextHandleCmd context (Exec cmd args) = doExec cmd args context
-contextHandleCmd context (Pipe cl cr) = do
+contextHandleCmd context (Pipe out err cl cr) = do
   (readEnd,writeEnd) <- createPipe
-  let lcontext = context{stout = Just writeEnd,wait = PassHandles}
+  let lout = if out then Just writeEnd else Nothing
+  let lerr = if err then Just writeEnd else Nothing
+  let lcontext = context{stout = lout,sterr = lerr,wait = PassHandles}
   let rcontext = context{stin  = Just readEnd ,wait = PassHandles}
   lret <- contextHandleCmd lcontext cl
   rret <- contextHandleCmd rcontext cr
