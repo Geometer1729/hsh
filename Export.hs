@@ -68,4 +68,5 @@ exports = flip execState (M.empty) $ do
   exportAs "(-)"  ((-)  :: Double -> Double -> Double)
   exportAs "(*)"  ((*)  :: Double -> Double -> Double)
   exportAs "(/)"  ((/)  :: Double -> Double -> Double)
+  exportAs "getLine" getLine
 

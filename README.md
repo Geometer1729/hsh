@@ -27,9 +27,6 @@ Has
 
 Needs
 	* infix function support
-  * common prelude functions
-    * forever
-      * better pattern matching on arguments and then also prelude rc
   * smarter tab completions
 	* fancy junk so cd .. works with simlinks 
   * Call to haskell

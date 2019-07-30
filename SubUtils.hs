@@ -3,6 +3,7 @@ module SubUtils where
 import System.Environment
 import System.Directory
 import Control.Monad
+import Data.List
 
 glob :: String -> IO [String]
 glob path 
@@ -57,9 +58,13 @@ sub :: String -> String -> String -> String
 sub _ _ [] = []
 sub match replace input = if isPrefix match input then replace ++ (sub match replace (drop (length match) input)) else (head input) : (sub match replace (tail input))
 
-dosubs :: [(String,String)] -> String -> String
-dosubs [] s = s
-dosubs ((m,r):xs) s = dosubs xs (sub m r s)
+doSubs :: [(String,String)] -> String -> String
+doSubs subs w = simpleDoSubs (reverse . sortOn (length . fst) $ subs) w
+-- applying subs from longest to shortest prevents things like (x,hi) (xs,bye) from truning x xs into hi his
+
+simpleDoSubs :: [(String,String)] -> String -> String
+simpleDoSubs [] s = s
+simpleDoSubs ((m,r):xs) s = simpleDoSubs xs (sub m r s)
 
 splitPath,splitSlash :: String -> [String]
 splitPath = splitOn ':'

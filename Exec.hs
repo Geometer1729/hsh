@@ -78,17 +78,32 @@ tryLambda :: String -> [String] -> Context -> IO (Maybe (IO CmdReturn))
 tryLambda ('(':'\\':string) args context = 
   if last string /= ')' 
     then return Nothing
-    else let
-      string' = init string
-      ws = words string'
-      vars = takeWhile (/= "->") ws
-      output = unwords . tail . dropWhile (/= "->") $ ws
-      subs = zip vars args
-      extraArgs = drop (length vars) args
-      output' = dosubs subs (output ++ unwords extraArgs)
-    in do
-      return . Just $ contextHandleLine context output' 
+    else do
+      let string' = init string
+      let ws = words string'
+      let vars = takeWhile (/= "->") ws
+      let functionOutput = unwords . tail . dropWhile (/= "->") $ ws
+      case compare args vars of
+            GT -> return Nothing
+            EQ -> do
+              let subs = zip vars args 
+              let output = doSubs subs functionOutput
+              return . Just $ contextHandleLine context output
+            LT -> let
+              flowableBools = map (\x -> last x == 's') vars
+              flowTarget = listToMaybe $ map fst . filter snd $ (zip [0..] flowableBools)
+              in case flowTarget of
+                Nothing -> do
+                  let output = doSubs (zip vars args) functionOutput ++ " " ++ unwords (drop (length vars) args)
+                  return . Just $ contextHandleLine context output
+                Just n -> do  
+                  let extra = length args - length vars
+                  let subList = take (n) args ++ [unwords . take (extra + 1) . drop  n $args] ++ (drop (n+extra+1) args)
+                  let subs = zip vars subList
+                  let output = doSubs subs functionOutput
+                  return . Just $ contextHandleLine context output
 tryLambda _ _ _ = return Nothing
+
 
 tryBuiltin :: String -> [String] -> Context -> IO (Maybe (IO CmdReturn))
 tryBuiltin cmd rawArgs context = case (cmd,rawArgs) of
