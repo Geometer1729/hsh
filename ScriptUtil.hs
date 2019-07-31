@@ -17,10 +17,10 @@ runFile silent path = do
    contents <- readFile path
    let ls = lines contents
    runLines ls
-  else when (not silent) (putStrLn "file not found") >> def
+  else when (not silent) (putStrLn "file not found") >> return defRet
 
 runLines :: [String] -> IO CmdReturn
-runLines [] = return def
+runLines [] = return defRet
 runLines (x:xs) = do
   l <- handleLine x
   if (not . shellExit $ l) then do

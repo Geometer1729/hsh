@@ -1,7 +1,6 @@
 {-# LANGUAGE LambdaCase #-}
 module Exec where
 
-import Data.Default
 import System.Directory
 import System.Environment
 import System.IO
@@ -40,19 +39,19 @@ doExec name args context = do
         Just c -> do
           retc <- c
           return $ ret <> retc
-        Nothing -> putStrLn ("no such command could be found " ++ name) >> return def{succes=False}
+        Nothing -> putStrLn ("no such command could be found " ++ name) >> return defRet{succes=False}
     else return $ ret
 
 expandArg :: String -> IO (CmdReturn,[String])
 expandArg w@('`' :xs) = if last xs == '`'  then do
   let ml = parseLine $ init xs
   case ml of
-    Nothing -> return (def{succes=False},[]) -- this needs to be better
+    Nothing -> return (defRet{succes=False},[]) -- this needs to be better
     Just l -> eval l
-  else return (def,[w])
-expandArg w@('"' :xs) = fmap ((,) def) $ if last xs == '"'  then return [init xs] else return [w]
-expandArg w@('\'':xs) = fmap ((,) def) $ if last xs == '\'' then return [init xs] else return [w]
-expandArg arg = fmap ((,) def) $ (varExpand >=> deTildify >=> glob) arg
+  else return (defRet,[w])
+expandArg w@('"' :xs) = fmap ((,) defRet) $ if last xs == '"'  then return [init xs] else return [w]
+expandArg w@('\'':xs) = fmap ((,) defRet) $ if last xs == '\'' then return [init xs] else return [w]
+expandArg arg = fmap ((,) defRet) $ (varExpand >=> deTildify >=> glob) arg
 
 findExec :: Attempt
 findExec = maybeInfix $ seqAttempts [tryVar,tryLambda,tryBuiltin,tryExec,tryHask]
@@ -117,7 +116,7 @@ tryLambda _ _ _ = return Nothing
 
 tryBuiltin :: String -> [String] -> Context -> IO (Maybe (IO CmdReturn))
 tryBuiltin cmd rawArgs context = case (cmd,rawArgs) of
-    ("exit",_)       -> return . Just $ return def{shellExit=True}
+    ("exit",_)       -> return . Just $ return defRet{shellExit=True}
     ("cd",args)      -> return . Just $ fromSuc $ cd args 
     ("print",args)   -> return . Just $ fromSuc $ printEnvVars args 
     ("lineMap",args) -> return . Just $ lineMap args context
@@ -130,7 +129,7 @@ builtins :: [String]
 builtins = ["exit","cd","print","lineMap",".","True","False"]
 
 fromSuc :: IO Bool -> IO CmdReturn
-fromSuc = fmap (\s -> def{succes=s})
+fromSuc = fmap (\s -> defRet{succes=s})
 
 
 tryExec :: String -> [String] -> Context -> IO (Maybe (IO CmdReturn))
@@ -161,7 +160,7 @@ tryHask func args context = return $ tryExport (func:args) context
 eval :: Line -> IO (CmdReturn,[String])
 eval w = do
   (readEnd,writeEnd) <- createPipe
-  ret <- contextHandleLineData def{stout = Just writeEnd,wait = PassHandles} w
+  ret <- contextHandleLineData defCon{stout = Just writeEnd,wait = PassHandles} w
   out <- hGetContents readEnd 
   ret' <- withWaits ret
   return (ret',concat . map words . lines $ out)
@@ -169,7 +168,7 @@ eval w = do
 withWaits :: CmdReturn -> IO CmdReturn 
 withWaits ret = do
   s <- waitFor (awaits ret)
-  return $ ret <> def{succes=s}
+  return $ ret <> defRet{succes=s}
 
 waitFor :: [ProcessHandle] -> IO Bool
 waitFor ps = fmap and $ mapM waitOne ps
@@ -213,7 +212,7 @@ letFunc left right = let
       [] -> error "let func called on []"
       [_] -> unwords right
       _ -> "(\\" ++ (unwords . tail $ left) ++ " -> " ++ unwords right ++ ")"
-    in setEnv (head left) value >> return def
+    in setEnv (head left) value >> return defRet
 
 printEnvVars :: [String] -> IO Bool
 printEnvVars vars = fmap and $ mapM printEnvVar vars
@@ -233,13 +232,13 @@ lineMap (f:cmd) context = do
   cmdRet <- contextHandleLine context{stout = Just writeEnd,wait=PassHandles} (unwords cmd)
   lineRets <- lineMapLoop f readEnd context
   awaitSuc <-  mapM waitForProcess (awaits cmdRet)
-  let cmdRet' = cmdRet <> def{succes=and . map  (== ExitSuccess) $ awaitSuc}
+  let cmdRet' = cmdRet <> defRet{succes=and . map  (== ExitSuccess) $ awaitSuc}
   return $ mconcat (cmdRet':lineRets)
 
 lineMapArgFail :: IO CmdReturn
 lineMapArgFail = do
   putStrLn "lineMap requires atleast 2 arguments"
-  return $ def{succes=False}
+  return $ defRet{succes=False}
 
 lineMapLoop :: String -> Handle -> Context -> IO [CmdReturn]
 lineMapLoop f h context = do
@@ -250,7 +249,7 @@ lineMapLoop f h context = do
     fmap (r:) $ lineMapLoop f h context
 
 true :: IO CmdReturn
-true = return def
+true = return defRet
 
 false :: IO CmdReturn
-false = return def{succes=False}
+false = return defRet{succes=False}

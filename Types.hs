@@ -1,6 +1,5 @@
 module Types where
 
-import Data.Default
 import System.Process
 import Data.Semigroup()
 import System.IO
@@ -17,14 +16,14 @@ data CmdReturn = CmdReturn {
   ,awaits    :: [ProcessHandle]
 } 
 
-instance Default CmdReturn where
-  def = CmdReturn False True []
+defRet :: CmdReturn
+defRet = CmdReturn False True []
 
 instance Semigroup CmdReturn where
   a <> b = CmdReturn (shellExit a || shellExit b) (succes a && succes b) (awaits a ++ awaits b)
 
 instance Monoid CmdReturn where
-  mempty = def
+  mempty = defRet
 
 data Context = Context {
    wait  :: WaitPlan
@@ -44,5 +43,6 @@ data  Command = Background Command
               | Infix Command String Command
               deriving(Eq,Ord,Show)
 
-instance Default Context where
-  def = Context Do Nothing Nothing Nothing
+defCon :: Context
+defCon = Context Do Nothing Nothing Nothing
+

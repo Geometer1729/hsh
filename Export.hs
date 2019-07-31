@@ -54,8 +54,8 @@ tryExport args context = let mex = findExport args
     Just ex -> Just $ do
       mres <- ex
       case mres of
-        Nothing  -> printTo (stout context) "wrong number of Args" >> return def{succes=False}
-        Just res -> printTo (stout context) res                    >> return def
+        Nothing  -> printTo (stout context) "wrong number of Args" >> return defRet{succes=False}
+        Just res -> printTo (stout context) res                    >> return defRet
 
 printTo :: Maybe Handle -> String -> IO ()
 printTo Nothing  s = putStrLn  s

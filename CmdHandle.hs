@@ -3,7 +3,6 @@ module CmdHandle where
 
 import Exec
 import Control.Monad
-import Data.Default
 import Data.Function
 import Parse
 import System.Environment
@@ -11,13 +10,13 @@ import System.Process
 import Types
 
 handleLine :: String -> IO CmdReturn
-handleLine = contextHandleLine def
+handleLine = contextHandleLine defCon
 
 contextHandleLine :: Context -> String -> IO CmdReturn
-contextHandleLine _ "" = return def
-contextHandleLine _ ('#':_) = return def
+contextHandleLine _ "" = return defRet
+contextHandleLine _ ('#':_) = return defRet
 contextHandleLine context input = case parseLine input of
-  Nothing -> putStrLn ( "syntax error " ++ show input ) >> return def{succes=False} 
+  Nothing -> putStrLn ( "syntax error " ++ show input ) >> return defRet{succes=False} 
   Just line -> do
     when debug $ print line
     contextHandleLineData context line
@@ -50,7 +49,7 @@ contextHandleCmd context (Pipe out err cl cr) = do
 contextHandleCmd context (Background cmd) = contextHandleCmd  context{wait=Dont} cmd
 contextHandleCmd context (ITE i t e) = do 
   iret <- contextHandleCmd context i
-  if shellExit iret then return def{shellExit=True} else contextHandleCmd context (if succes iret then t else e)
+  if shellExit iret then return defRet{shellExit=True} else contextHandleCmd context (if succes iret then t else e)
 contextHandleCmd context (Or l r) = do
   lret <- contextHandleCmd context l
   if (succes lret) || (shellExit lret) then return lret else do 
