@@ -115,7 +115,9 @@ parseParen = do
   when (singleWordInParen str) pfail
   when (str == "" || head str == '\\') pfail
   _ <- fmap (trace "this ran") look
+  maybeEatSpace
   cmd <- parseCmd
+  maybeEatSpace
   char ')'
   return cmd
 

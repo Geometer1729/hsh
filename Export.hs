@@ -61,6 +61,9 @@ printTo :: Maybe Handle -> String -> IO ()
 printTo Nothing  s = putStrLn  s
 printTo (Just h) s = hPutStrLn h s
 
+names :: [String]
+names = M.keys exports
+
 exports :: Table 
 exports = flip execState (M.empty) $ do
   exportAs "(++)" ((++) :: String -> String -> String ) 
@@ -69,4 +72,5 @@ exports = flip execState (M.empty) $ do
   exportAs "(*)"  ((*)  :: Double -> Double -> Double)
   exportAs "(/)"  ((/)  :: Double -> Double -> Double)
   exportAs "getLine" getLine
+  exportAs "readFile" readFile
 

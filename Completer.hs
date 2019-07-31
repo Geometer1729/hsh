@@ -7,6 +7,10 @@ import Control.Monad
 import Data.Maybe
 import Data.List
 import SubUtils
+import Export
+import Exec (builtins)
+import Parse
+import Data.Char
 
 readLine :: String -> IO (Maybe String)
 readLine prompt = runInputT settings (handleInterrupt lineIn $ withInterrupt $ lineIn)
@@ -29,16 +33,21 @@ data CompType = Exec | File
 
 compType :: String -> CompType
 compType "" = Exec
-compType _  = File
+compType w  = let
+  lw = last . words $ w
+  thenExecWords = infixes ++ ["sudo","="]
+  in
+  if last lw == '(' || lw `elem` thenExecWords then Exec else File
 
-simpleComp :: String -> Completion
-simpleComp s = Completion s "" True
 
 compExec :: String -> IO [Completion]
 compExec word = do
   execs <- executables
-  let opts = filter (isPrefix word) execs
-  return $ map simpleComp opts
+  let execs1 = execs ++ names --exports
+  let execs2 = execs1 ++ builtins
+  let (sym,_) = break isAlpha word
+  let opts = filter (isPrefix word) (map (sym ++ ) execs2)
+  return $ map simpleCompletion opts
 
 compFile :: String -> IO [Completion]
 compFile w = do

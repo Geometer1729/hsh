@@ -24,10 +24,9 @@ Has
 	* backticks allow evaluating commands inside commands
   * store output as var with <-, ie x <- ls
   * Pipe stdout stderr seperately or together
+	* infix function support
 
 Needs
-	* infix function support
-  * smarter tab completions
 	* fancy junk so cd .. works with simlinks 
   * Call to haskell
   * Configurable Prompt ideally parsed from Env variable

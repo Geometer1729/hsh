@@ -1,6 +1,8 @@
 install: build placeFiles
 
-udate: updateSrc install
+udate: 
+	git pull
+	make install
 
 placeFiles:
 	sudo cp hsh /bin
@@ -12,6 +14,3 @@ build:
 
 clean:
 	rm *.hi *.o *.hi-boot *.o-boot
-
-udateSrc:
-	git pull

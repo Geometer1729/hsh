@@ -55,7 +55,17 @@ expandArg w@('\'':xs) = fmap ((,) def) $ if last xs == '\'' then return [init xs
 expandArg arg = fmap ((,) def) $ (varExpand >=> deTildify >=> glob) arg
 
 findExec :: Attempt
-findExec = seqAttempts [tryVar,tryLambda,tryBuiltin,tryExec,tryHask]
+findExec = maybeInfix $ seqAttempts [tryVar,tryLambda,tryBuiltin,tryExec,tryHask]
+
+maybeInfix :: Attempt -> Attempt
+maybeInfix a = seqAttempts [tryInfix a,a]
+
+tryInfix :: Attempt -> Attempt
+tryInfix _ _ [] _ = return Nothing 
+tryInfix atempt path (first:rest) context = atempt (deInfix first) (path:rest) context
+
+deInfix :: String -> String
+deInfix w = "(" ++ w ++ ")"
 
 varExpand :: String -> IO String
 varExpand ('$':w) = let
@@ -115,6 +125,9 @@ tryBuiltin cmd rawArgs context = case (cmd,rawArgs) of
     ("True",[])      -> return . Just $ true
     ("False",[])     -> return . Just $ false
     _                -> return $ Nothing
+
+builtins :: [String]
+builtins = ["exit","cd","print","lineMap",".","True","False"]
 
 fromSuc :: IO Bool -> IO CmdReturn
 fromSuc = fmap (\s -> def{succes=s})
