@@ -1,6 +1,6 @@
 install: build placeFiles
 
-udate: 
+update: 
 	git pull
 	make install
 
