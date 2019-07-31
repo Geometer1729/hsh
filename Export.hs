@@ -7,7 +7,6 @@ module Export where
 import Control.Monad.State
 import System.IO
 import Types
-import Data.Default
 import qualified Data.Map as M
 
 class Exportable a where

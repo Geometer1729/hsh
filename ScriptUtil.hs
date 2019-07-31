@@ -1,7 +1,6 @@
 module ScriptUtil where
 
 import Types
-import Data.Default
 import System.Directory
 import Control.Monad
 
