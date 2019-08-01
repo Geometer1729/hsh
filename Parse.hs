@@ -10,14 +10,15 @@ import Data.Bits
 
 import Debug.Trace
 
-parseLine :: String -> Maybe Line
-parseLine s = let 
+parseLine :: String -> Either Line String
+parseLine w = let 
+  (s,_) = break (== '#') w
   parser = readP_to_S (lineParser)
   parses = map head . group . sort $ parser s
   finished = filter ((=="") . snd) parses
     in if length finished == 1
-      then Just . fst . head $ finished
-      else Nothing
+      then Left . fst . head $ finished
+      else Right (if s == ""  then "" else "syntax error " ++ show (length finished) ++ " parses")
 
 debugParse :: String -> IO ()
 debugParse s = do

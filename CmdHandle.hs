@@ -14,10 +14,9 @@ handleLine = contextHandleLine defCon
 
 contextHandleLine :: Context -> String -> IO CmdReturn
 contextHandleLine _ "" = return defRet
-contextHandleLine _ ('#':_) = return defRet
 contextHandleLine context input = case parseLine input of
-  Nothing -> putStrLn ( "syntax error " ++ show input ) >> return defRet{succes=False} 
-  Just line -> do
+  Right str -> if str == "" then return defRet else putStrLn str >> return defRet{succes=False}
+  Left line -> do
     when debug $ print line
     contextHandleLineData context line
 
@@ -33,17 +32,12 @@ contextHandleCmd :: Context -> Command -> IO CmdReturn
 contextHandleCmd context (Exec cmd args) = doExec cmd args context
 contextHandleCmd context (Pipe out err cl cr) = do
   (readEnd,writeEnd) <- createPipe
-  let lout = if out then Just writeEnd else Nothing
-  let lerr = if err then Just writeEnd else Nothing
-  let lcontext = context{stout = lout,sterr = lerr,wait = PassHandles}
+  let lcontext = context{wait = PassHandles,stout = guard out >> Just writeEnd , sterr = guard err >> Just writeEnd }
   let rcontext = context{stin  = Just readEnd ,wait = PassHandles}
   lret <- contextHandleCmd lcontext cl
   rret <- contextHandleCmd rcontext cr
   case wait context of
-    Do -> do
-      lret' <- withWaits lret
-      rret' <- withWaits rret
-      return $ lret' <> rret'
+    Do -> on (<>) withWaits lret rret
     Dont -> return $ (lret <> rret){awaits = [] }
     PassHandles -> return $ lret <> rret
 contextHandleCmd context (Background cmd) = contextHandleCmd  context{wait=Dont} cmd
@@ -60,5 +54,5 @@ contextHandleCmd context (And l r) = do
   if (not . succes $ lret) || (shellExit $ lret) then return lret else do 
       rret <- contextHandleCmd context r
       return $ lret <> rret
-contextHandleCmd context (Seq l r) = on (liftM2 (<>)) (contextHandleCmd context) l r
+contextHandleCmd context (Seq l r) = on (<>) (contextHandleCmd context) l r
 contextHandleCmd _ (Infix _ _ _) = error "unexpaned infix passed to context handle cmd"

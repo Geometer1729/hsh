@@ -27,6 +27,7 @@ Has
 	* infix function support
 
 Needs
+  * tab complete local execs
 	* fancy junk so cd .. works with simlinks 
   * Call to haskell
   * Configurable Prompt ideally parsed from Env variable

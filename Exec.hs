@@ -46,8 +46,8 @@ expandArg :: String -> IO (CmdReturn,[String])
 expandArg w@('`' :xs) = if last xs == '`'  then do
   let ml = parseLine $ init xs
   case ml of
-    Nothing -> return (defRet{succes=False},[]) -- this needs to be better
-    Just l -> eval l
+    Right str -> putStrLn ("tic command expansion failed with " ++ str) >> return (defRet{succes=False},[]) -- this needs to be better
+    Left l -> eval l
   else return (defRet,[w])
 expandArg w@('"' :xs) = fmap ((,) defRet) $ if last xs == '"'  then return [init xs] else return [w]
 expandArg w@('\'':xs) = fmap ((,) defRet) $ if last xs == '\'' then return [init xs] else return [w]

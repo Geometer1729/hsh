@@ -1,6 +1,13 @@
 #!/bin/hsh
-let f x = ls --color=auto x
-f .
-f ..
-print f
-echo hi
+let f x y = echo x >>  echo y
+files <- ls
+echo files
+y <- echo yeet
+f files $y
+(False || echo hi) >>= sed "s/hi/bye"
+False && echo should not run
+True && echo should run
+if False then echo should not run else echo should run
+False || echo should && echo run
+echo `ls`
+echo ">>= ls ||"
